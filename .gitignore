@@ -1,0 +1,44 @@
+# Build output
+bin/
+dist/
+build/
+*.exe
+*.out
+
+# Private payroll input files
+Source/
+
+# Generated output files
+output/
+generated/
+payslips/
+
+# Generated documents
+*.pdf
+*.xlsx
+
+# Keep the Excel templates in Data/
+!Data/
+!Data/**/*.xlsx
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
+
+
+# LibreOffice temporary lock files
+.~lock.*
