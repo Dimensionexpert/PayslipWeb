@@ -9,89 +9,42 @@ import (
 
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
-	"github.com/Dimensionexpert/payslip/internal/excel"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	"github.com/Dimensionexpert/payslip/internal/importer"
 )
 
 func main() {
-	totaltime := time.Now()
+	totalTime := time.Now()
+
 	// ==================================================
 	// 1. Configure input files
 	// ==================================================
 
-	clusterFileName := "clusters.xlsx"
-	truthFileName := "August_2026_School_All Formate Maval copy.xlsx"
+	clusterPath := "./Data/clusters.xlsx"
+	truthPath := "./Source/August_2026_School_All Formate Maval copy.xlsx"
+	dbPath := "payslip.db"
 
 	// ==================================================
-	// 2. Read cluster information
+	// 2. Import payroll data into the database
 	// ==================================================
 
-	clusterFile, err := excel.Open("./Data/" + clusterFileName)
-	if err != nil {
-		fmt.Println("opening cluster file:", err)
-		return
-	}
-	defer clusterFile.Close()
-
-	clusterRows, err := excel.GetRows(clusterFile, "Sheet1")
-	if err != nil {
-		fmt.Println("reading cluster sheet:", err)
-		return
-	}
-
-	clusterMap, duplicateUDISECount := importer.GetClusterMap(clusterRows)
-
-	// ==================================================
-	// 3. Read the source payroll file
-	// ==================================================
-
-	truthFile, err := excel.Open("./Source/" + truthFileName)
-	if err != nil {
-		fmt.Println("opening source payroll file:", err)
-		return
-	}
-	defer truthFile.Close()
-
-	truthRows, err := excel.GetRows(truthFile, "abstract")
-	if err != nil {
-		fmt.Println("reading source payroll sheet:", err)
-		return
-	}
-
-	// ==================================================
-	// 4. Detect the payroll period
-	// ==================================================
-
-	month, year, err := importer.ParsePeriod(truthFileName)
-	if err != nil {
-		fmt.Println("parsing payroll period:", err)
-		return
-	}
-
-	// ==================================================
-	// 5. Convert source rows into application models
-	// ==================================================
-
-	employees, schools, payslips, report, err := importer.ImportTruth(
-		truthRows,
-		clusterMap,
-		month,
-		year,
+	report, month, year, err := importer.ImportPayroll(
+		clusterPath,
+		truthPath,
+		dbPath,
 	)
 	if err != nil {
-		fmt.Println("importing source data:", err)
+		fmt.Println("Import failed:", err)
 		return
 	}
 
-	report.DuplicateUDISECount = duplicateUDISECount
 	report.Print()
 
 	// ==================================================
-	// 6. Open the SQLite database
+	// 3. Open database for generation workflow
 	// ==================================================
 
-	db, err := database.Open("payslip.db")
+	db, err := database.Open(dbPath)
 	if err != nil {
 		fmt.Println("opening database:", err)
 		return
@@ -101,41 +54,7 @@ func main() {
 	fmt.Println("Database opened successfully")
 
 	// ==================================================
-	// 7. Insert or update master data
-	// ==================================================
-
-	if err := database.InsertClusters(db, clusterMap); err != nil {
-		fmt.Println("inserting clusters:", err)
-		return
-	}
-
-	if err := database.InsertSchools(db, schools); err != nil {
-		fmt.Println("inserting schools:", err)
-		return
-	}
-
-	if err := database.InsertEmployees(db, employees); err != nil {
-		fmt.Println("inserting employees:", err)
-		return
-	}
-
-	// ==================================================
-	// 8. Insert monthly payslip records
-	// ==================================================
-
-	if err := database.InsertPayslipRecords(db, payslips); err != nil {
-		fmt.Println("inserting payslip records:", err)
-		return
-	}
-
-	fmt.Printf(
-		"Import completed for %02d/%d\n",
-		month,
-		year,
-	)
-
-	// ==================================================
-	// 9. Fetch imported monthly payslips
+	// 4. Fetch imported monthly payslips
 	// ==================================================
 
 	exportPayslips, err := database.GetPayslips(db, month, year)
@@ -157,7 +76,7 @@ func main() {
 	}
 
 	// ==================================================
-	// 10. Generate monthly Excel files
+	// 5. Generate monthly Excel files
 	//
 	// Output:
 	//
@@ -194,7 +113,7 @@ func main() {
 	)
 
 	// ==================================================
-	// 11. Collect monthly Excel files recursively
+	// 6. Collect monthly Excel files recursively
 	//
 	// Yearly files are skipped.
 	// ==================================================
@@ -247,7 +166,7 @@ func main() {
 	)
 
 	// ==================================================
-	// 12. Convert monthly Excel files to PDFs concurrently
+	// 7. Convert monthly Excel files to PDFs concurrently
 	//
 	// Output:
 	//
@@ -297,7 +216,7 @@ func main() {
 	)
 
 	// ==================================================
-	// 13. Generate yearly payslips for every employee
+	// 8. Generate yearly payslips for every employee
 	//
 	// Financial year:
 	// April 2026 to March 2027
@@ -386,8 +305,9 @@ func main() {
 		yearlyFailed,
 		time.Since(yearlyStart),
 	)
+
 	// ==================================================
-	// 14. Convert yearly Excel files to PDFs concurrently
+	// 9. Convert yearly Excel files to PDFs concurrently
 	//
 	// Output:
 	//
@@ -486,5 +406,13 @@ func main() {
 		yearlyPDFFailed,
 		time.Since(yearlyPDFStart),
 	)
-	fmt.Printf("Total time: %v\n", time.Since(totaltime))
+
+	// ==================================================
+	// 10. Total execution time
+	// ==================================================
+
+	fmt.Printf(
+		"Total time: %v\n",
+		time.Since(totalTime),
+	)
 }
