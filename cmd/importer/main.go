@@ -10,6 +10,7 @@ import (
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
+	"github.com/Dimensionexpert/payslip/internal/generator"
 	"github.com/Dimensionexpert/payslip/internal/importer"
 )
 
@@ -84,16 +85,10 @@ func main() {
 	// ==================================================
 
 	outputDir := "output"
+	templatePath := "Data/template.xlsx"
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		fmt.Println("creating output directory:", err)
-		return
-	}
-
-	excelStart := time.Now()
-
-	if err := genexcel.GenerateMonthlyPayslips(
-		"Data/template.xlsx",
+	if err := generator.GenerateMonthlyExcel(
+		templatePath,
 		outputDir,
 		exportPayslips,
 	); err != nil {
@@ -101,16 +96,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf(
-		"Time taken to generate Excel files: %v\n",
-		time.Since(excelStart),
-	)
-
-	fmt.Printf(
-		"Generated %d monthly payslips in %s\n",
-		len(exportPayslips),
-		outputDir,
-	)
+	fmt.Printf("Generated payslips: %d\n", len(exportPayslips))
 
 	// ==================================================
 	// 6. Collect monthly Excel files recursively
