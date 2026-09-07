@@ -21,8 +21,8 @@ func main() {
 	// 1. Configure input files
 	// ==================================================
 
-	clusterPath := "./Data/clusters.xlsx"
-	truthPath := "./Source/August_2026_School_All Formate Maval copy.xlsx"
+	clusterPath := "./data/clusters.xlsx"
+	truthPath := "./source/August_2026_School_All Formate Maval copy.xlsx"
 	dbPath := "payslip.db"
 
 	// ==================================================
