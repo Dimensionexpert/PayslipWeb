@@ -9,7 +9,6 @@ import (
 
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
-	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	"github.com/Dimensionexpert/payslip/internal/generator"
 	"github.com/Dimensionexpert/payslip/internal/importer"
 )
@@ -24,6 +23,16 @@ func main() {
 	clusterPath := "./data/clusters.xlsx"
 	truthPath := "./source/August_2026_School_All Formate Maval copy.xlsx"
 	dbPath := "payslip.db"
+
+	outputDir := "output"
+
+	monthlyXlsxPath := "output/August_2026"
+	// yearlyXlsxPath := "output/Financial_Year_2026_2027"
+	monthly_template := "data/monthly_template.xlsx"
+	yearly_template := "data/yearly_template.xlsx"
+
+	const financialYearStart = 2026
+	const pdfWorkers = 12
 
 	// ==================================================
 	// 2. Import payroll data into the database
@@ -84,11 +93,8 @@ func main() {
 	// output/Month_Year/Cluster/School/Employee.xlsx
 	// ==================================================
 
-	outputDir := "output"
-	templatePath := "Data/template.xlsx"
-
 	if err := generator.GenerateMonthlyExcel(
-		templatePath,
+		monthly_template,
 		outputDir,
 		exportPayslips,
 	); err != nil {
@@ -104,45 +110,9 @@ func main() {
 	// Yearly files are skipped.
 	// ==================================================
 
-	var conversionJobs []concurrency.ConversionJob
-
-	err = filepath.WalkDir(
-		outputDir,
-		func(path string, entry os.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-
-			if entry.IsDir() {
-				return nil
-			}
-
-			if !strings.EqualFold(filepath.Ext(entry.Name()), ".xlsx") {
-				return nil
-			}
-
-			// Do not convert yearly XLSX files as monthly PDFs.
-			if strings.Contains(path, "Financial_Year_") {
-				return nil
-			}
-
-			schoolDir := filepath.Dir(path)
-			pdfDir := filepath.Join(schoolDir, "PDF")
-
-			conversionJobs = append(
-				conversionJobs,
-				concurrency.ConversionJob{
-					Filepath: path,
-					OutDir:   pdfDir,
-				},
-			)
-
-			return nil
-		},
-	)
-
+	conversionJobs, err := generator.CollectPDFJobs(monthlyXlsxPath)
 	if err != nil {
-		fmt.Println("walking output directory:", err)
+		fmt.Println("collecting monthly PDF jobs:", err)
 		return
 	}
 
@@ -160,8 +130,6 @@ func main() {
 	// ==================================================
 
 	pdfStart := time.Now()
-
-	const pdfWorkers = 12
 
 	results := concurrency.RunPDFConversion(
 		conversionJobs,
@@ -186,13 +154,7 @@ func main() {
 	success := 0
 	failed := 0
 
-	for _, result := range results {
-		if result.Err != nil {
-			failed++
-		} else {
-			success++
-		}
-	}
+	success, failed = generator.CountConversionResults(results)
 
 	fmt.Printf(
 		"PDF conversion: %d succeeded, %d failed in %v\n",
@@ -208,89 +170,18 @@ func main() {
 	// April 2026 to March 2027
 	// ==================================================
 
-	const financialYearStart = 2026
-
 	yearlyStart := time.Now()
-
-	yearlyEmployees, err := database.GetEmployees(db)
-	if err != nil {
-		fmt.Println("fetching employees for yearly payslips:", err)
-		return
-	}
-
-	if len(yearlyEmployees) == 0 {
-		fmt.Println("No employees found for yearly payslips")
-		return
-	}
-
-	yearlySuccess := 0
-	yearlyFailed := 0
-
-	for index, employee := range yearlyEmployees {
-		fmt.Printf(
-			"Generating yearly payslip %d/%d: %s\n",
-			index+1,
-			len(yearlyEmployees),
-			employee.Name,
-		)
-
-		yearly, err := database.GetYearlyPayslip(
-			db,
-			employee.ShalarthID,
-			financialYearStart,
-		)
-		if err != nil {
-			fmt.Printf(
-				"FAILED: fetching yearly payslip for %s: %v\n",
-				employee.Name,
-				err,
-			)
-
-			yearlyFailed++
-			continue
-		}
-
-		if len(yearly.Payslips) == 0 {
-			fmt.Printf(
-				"SKIPPED: no yearly payslip records for %s\n",
-				employee.Name,
-			)
-
-			yearlyFailed++
-			continue
-		}
-
-		yearlyPath, err := genexcel.GenerateYearlyPayslip(
-			"Data/yearly_template.xlsx",
-			outputDir,
-			yearly,
-			financialYearStart,
-		)
-		if err != nil {
-			fmt.Printf(
-				"FAILED: generating yearly payslip for %s: %v\n",
-				employee.Name,
-				err,
-			)
-
-			yearlyFailed++
-			continue
-		}
-
-		fmt.Printf(
-			"Yearly payslip generated: %s\n",
-			yearlyPath,
-		)
-
-		yearlySuccess++
-	}
-
-	fmt.Printf(
-		"Yearly payslip generation: %d succeeded, %d failed in %v\n",
-		yearlySuccess,
-		yearlyFailed,
-		time.Since(yearlyStart),
+	err = generator.ExportYearlyEmployeePayslips(
+		db,
+		yearly_template,
+		outputDir,
+		financialYearStart,
 	)
+	if err != nil {
+		fmt.Println("yearly payslip export failed:", err)
+		return
+	}
+	fmt.Println(time.Since(yearlyStart))
 
 	// ==================================================
 	// 9. Convert yearly Excel files to PDFs concurrently
@@ -353,11 +244,9 @@ func main() {
 		len(yearlyConversionJobs),
 	)
 
-	const yearlyPDFWorkers = 12
-
 	yearlyPDFResults := concurrency.RunPDFConversion(
 		yearlyConversionJobs,
-		yearlyPDFWorkers,
+		pdfWorkers,
 		func(result concurrency.ConversionResult) {
 			if result.Err != nil {
 				fmt.Printf(
