@@ -29,7 +29,7 @@ func main() {
 	yearly_template := "data/yearly_template.xlsx"
 
 	const financialYearStart = 2026
-	const pdfWorkers = 12
+	const pdfWorkers = 8
 
 	// ==================================================
 	// 2. Import payroll data into the database
@@ -57,8 +57,6 @@ func main() {
 		return
 	}
 	defer db.Close()
-
-	fmt.Println("Database opened successfully")
 
 	// ==================================================
 	// 4. Fetch imported monthly payslips

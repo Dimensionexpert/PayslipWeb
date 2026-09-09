@@ -59,7 +59,6 @@ func InsertClusters(db *sql.DB, clusterMap map[string]string) error {
 		}
 	}
 
-	fmt.Printf("Processed clusters: %d\n", len(seen))
 	return nil
 }
 

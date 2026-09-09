@@ -1,0 +1,109 @@
+./internal/generator/yearly.go:		fmt.Printf(
+./internal/generator/yearly.go:			fmt.Printf(
+./internal/generator/yearly.go:		fmt.Printf("Yearly payslip generated: %s\n", yearlyPath)
+./internal/generator/yearly.go:	fmt.Printf(
+./internal/generator/monthly.go:	fmt.Printf(
+./internal/generator/monthly.go:	fmt.Printf(
+./internal/database/insert.go:	fmt.Printf("Processed clusters: %d\n", len(seen))
+./internal/database/insert.go:			fmt.Printf(
+./internal/database/insert.go:			fmt.Printf("Invalid employee: %+v\n", employee)
+./cmd/importer/main.go:		fmt.Println("Import failed:", err)
+./cmd/importer/main.go:		fmt.Println("opening database:", err)
+./cmd/importer/main.go:		fmt.Println("fetching monthly payslips:", err)
+./cmd/importer/main.go:	fmt.Printf(
+./cmd/importer/main.go:		fmt.Println("No payslips found")
+./cmd/importer/main.go:		fmt.Println("generating monthly Excel files:", err)
+./cmd/importer/main.go:	fmt.Printf("Generated payslips: %d\n", len(exportPayslips))
+./cmd/importer/main.go:		fmt.Println("collecting monthly PDF jobs:", err)
+./cmd/importer/main.go:	fmt.Printf(
+./cmd/importer/main.go:				fmt.Printf(
+./cmd/importer/main.go:			fmt.Printf(
+./cmd/importer/main.go:	fmt.Printf(
+./cmd/importer/main.go:		fmt.Println("yearly payslip export failed:", err)
+./cmd/importer/main.go:	fmt.Println(time.Since(yearlyStart))
+./cmd/importer/main.go:		fmt.Println("collecting yearly PDF jobs:", err)
+./cmd/importer/main.go:	fmt.Printf(
+./cmd/importer/main.go:				fmt.Printf(
+./cmd/importer/main.go:			fmt.Printf(
+./cmd/importer/main.go:	fmt.Printf(
+./cmd/importer/main.go:	fmt.Printf(
+./internal/importer/Truth.go:		fmt.Println("\nMissing cluster mappings:")
+./internal/importer/Truth.go:			fmt.Printf("%s - %s\n", udise, schoolName)
+./internal/importer/Truth.go:		fmt.Println("\nUnknown UDISE:")
+./internal/importer/Truth.go:			fmt.Println(udise)
+./internal/importer/report.go:	fmt.Println()
+./internal/importer/report.go:	fmt.Println("========== IMPORT REPORT ==========")
+./internal/importer/report.go:	fmt.Printf("Employees:          %d\n", r.EmployeeCount)
+./internal/importer/report.go:	fmt.Printf("Schools:            %d\n", r.SchoolCount)
+./internal/importer/report.go:	fmt.Printf("Cluster mappings:   %d\n", r.ClusterMappingCount)
+./internal/importer/report.go:	fmt.Printf("Missing clusters:   %d\n", r.MissingClusterCount)
+./internal/importer/report.go:	fmt.Printf("Unknown UDISE:      %d\n", r.UnknownUDISECount)
+./internal/importer/report.go:	fmt.Printf("Duplicate UDISE:    %d\n", r.DuplicateUDISECount)
+./internal/importer/report.go:		fmt.Println()
+./internal/importer/report.go:		fmt.Println("Missing Cluster Mappings:")
+./internal/importer/report.go:			fmt.Println(" -", value)
+./internal/importer/report.go:		fmt.Println()
+./internal/importer/report.go:		fmt.Println("Unknown UDISE:")
+./internal/importer/report.go:			fmt.Println(" -", value)
+./internal/importer/report.go:		fmt.Println()
+./internal/importer/report.go:		fmt.Println("Duplicate UDISE:")
+./internal/importer/report.go:			fmt.Println(" -", value)
+./internal/importer/report.go:	fmt.Println("===================================")
+./cmd/server/main.go:	log.Println("Server running at http://localhost:8080")
+./cmd/server/main.go:		log.Fatal(err)
+./internal/genPDF/convert.go:	log.Printf(
+./internal/importer/report.go:func (r ImportReport) Print() {
+./frontend/app.js:                No matching PDFs found.
+./internal/concurrency/pdf.go:	Err      error
+./internal/database/employee.go:func GetEmployees(db *sql.DB) ([]models.Employee, error) {
+./internal/genExcel/yearly.go:) (string, error) {
+./internal/database/exportYearlyPayslips.go:) ([]models.PayslipExportYear, error) {
+./internal/generator/yearly.go:) (string, error) {
+./internal/generator/yearly.go:) error {
+./internal/generator/yearly.go:		return fmt.Errorf("no employees found for yearly payslips")
+./internal/generator/yearly.go:		fmt.Printf("Yearly payslip generated: %s\n", yearlyPath)
+./internal/generator/yearly.go:		"Yearly payslip generation: %d succeeded, %d failed\n",
+./internal/genExcel/monthly.go:) (string, error) {
+./internal/genExcel/monthly.go:) error {
+./internal/generator/monthly.go:) error {
+./internal/generator/monthly.go:		return fmt.Errorf("creating output directory failed: %w", err)
+./internal/generator/monthly.go:		return fmt.Errorf("generating monthly Excel files failed: %w", err)
+./internal/database/exportYearlyPayslip.go:) (models.PayslipExportYear, error) {
+./internal/genPDF/convert.go:) error {
+./internal/genPDF/convert.go:		"PDF generated: %s",
+./internal/generator/count_Job_results.go:) (success int, failed int) {
+./internal/generator/count_Job_results.go:			failed++
+./internal/generator/count_Job_results.go:	return success, failed
+./internal/generator/pdf_Jobs.go:func CollectPDFJobs(root string) ([]concurrency.ConversionJob, error) {
+./internal/generator/pdf_Jobs.go:		walkErr error,
+./internal/generator/pdf_Jobs.go:	) error {
+./internal/database/exportMonthlyPayslips.go:) ([]models.PayslipExport, error) {
+./internal/database/database.go:func Open(path string) (*sql.DB, error) {
+./cmd/importer/main.go:		fmt.Println("Import failed:", err)
+./cmd/importer/main.go:	// 4. Fetch imported monthly payslips
+./cmd/importer/main.go:		"Payslips found for %02d/%d: %d\n",
+./cmd/importer/main.go:		fmt.Println("No payslips found")
+./cmd/importer/main.go:		"XLSX files found for PDF conversion: %d\n",
+./cmd/importer/main.go:				"PDF generated: %s\n",
+./cmd/importer/main.go:	success, failed := generator.CountConversionResults(results)
+./cmd/importer/main.go:		"PDF conversion: %d succeeded, %d failed in %v\n",
+./cmd/importer/main.go:		failed,
+./cmd/importer/main.go:		fmt.Println("yearly payslip export failed:", err)
+./cmd/importer/main.go:		"Yearly XLSX files found for PDF conversion: %d\n",
+./cmd/importer/main.go:				"Yearly PDF generated: %s\n",
+./cmd/importer/main.go:		"Yearly PDF conversion: %d succeeded, %d failed in %v\n",
+./internal/importer/Truth.go:	error,
+./internal/importer/filename.go:func ParsePeriod(filename string) (month, year int, err error) {
+./internal/importer/import.go:) (ImportReport, int, int, error) {
+./internal/excel/rows.go:func GetRows(f *excelize.File, sheet string) ([][]string, error) {
+./internal/excel/open.go:// Open opens an Excel file at the given path and returns the file handle and any error that occurred.
+./internal/excel/open.go:func Open(path string) (*excelize.File, error) {
+./internal/database/exportMonthlyPayslip.go:) (models.PayslipExport, error) {
+./internal/database/exportMonthlyPayslip.go:				"payslip not found: Shalarth ID %s, %02d/%d",
+./internal/database/insert.go:func getEmployeeIDByShalarthID(db DBTX, shalarthID string) (int, error) {
+./internal/database/insert.go:func InsertClusters(db *sql.DB, clusterMap map[string]string) error {
+./internal/database/insert.go:func getClusterID(db *sql.DB, clusterName string) (int, error) {
+./internal/database/insert.go:func getSchoolIDByUDISE(db DBTX, udise string) (int, error) {
+./internal/database/insert.go:func InsertSchools(db *sql.DB, schools map[string]models.School) error {
+./internal/database/insert.go:func InsertEmployees(db *sql.DB, employees []models.Employee) error {
+./internal/database/insert.go:) error {

@@ -89,16 +89,20 @@ func ImportTruth(
 	report.MissingClusterCount = len(missingClusters)
 	report.UnknownUDISECount = len(unknownUDISE)
 
-	fmt.Println("\nMissing cluster mappings:")
+	if len(missingClusters) > 0 {
+		fmt.Println("\nMissing cluster mappings:")
 
-	for udise, schoolName := range missingClusters {
-		fmt.Printf("%s - %s\n", udise, schoolName)
+		for udise, schoolName := range missingClusters {
+			fmt.Printf("%s - %s\n", udise, schoolName)
+		}
 	}
 
-	fmt.Println("\nUnknown UDISE:")
+	if len(unknownUDISE) > 0 {
+		fmt.Println("\nUnknown UDISE:")
 
-	for udise := range unknownUDISE {
-		fmt.Println(udise)
+		for udise := range unknownUDISE {
+			fmt.Println(udise)
+		}
 	}
 
 	return employees, schools, payslips, report, nil
