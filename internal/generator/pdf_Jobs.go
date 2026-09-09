@@ -8,7 +8,6 @@ import (
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 )
 
-// internal/generator/pdf.go
 
 func CollectPDFJobs(root string) ([]concurrency.ConversionJob, error) {
 	var jobs []concurrency.ConversionJob

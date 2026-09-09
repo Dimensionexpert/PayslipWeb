@@ -2,9 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
@@ -27,7 +24,7 @@ func main() {
 	outputDir := "output"
 
 	monthlyXlsxPath := "output/August_2026"
-	// yearlyXlsxPath := "output/Financial_Year_2026_2027"
+	yearlyXlsxPath := "output/Financial_Year_2026_2027"
 	monthly_template := "data/monthly_template.xlsx"
 	yearly_template := "data/yearly_template.xlsx"
 
@@ -106,8 +103,6 @@ func main() {
 
 	// ==================================================
 	// 6. Collect monthly Excel files recursively
-	//
-	// Yearly files are skipped.
 	// ==================================================
 
 	conversionJobs, err := generator.CollectPDFJobs(monthlyXlsxPath)
@@ -151,10 +146,7 @@ func main() {
 		},
 	)
 
-	success := 0
-	failed := 0
-
-	success, failed = generator.CountConversionResults(results)
+	success, failed := generator.CountConversionResults(results)
 
 	fmt.Printf(
 		"PDF conversion: %d succeeded, %d failed in %v\n",
@@ -184,58 +176,12 @@ func main() {
 	fmt.Println(time.Since(yearlyStart))
 
 	// ==================================================
-	// 9. Convert yearly Excel files to PDFs concurrently
-	//
-	// Output:
-	//
-	// output/Financial_Year_2026_2027/Cluster/School/PDF/Employee.pdf
+	// 9. Collect yearly Excel files recursively
 	// ==================================================
 
-	yearlyPDFStart := time.Now()
-
-	yearlyPDFRoot := filepath.Join(
-		outputDir,
-		fmt.Sprintf(
-			"Financial_Year_%d_%d",
-			financialYearStart,
-			financialYearStart+1,
-		),
-	)
-
-	var yearlyConversionJobs []concurrency.ConversionJob
-
-	err = filepath.WalkDir(
-		yearlyPDFRoot,
-		func(path string, entry os.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-
-			if entry.IsDir() {
-				return nil
-			}
-
-			if !strings.EqualFold(filepath.Ext(entry.Name()), ".xlsx") {
-				return nil
-			}
-
-			schoolDir := filepath.Dir(path)
-			pdfDir := filepath.Join(schoolDir, "PDF")
-
-			yearlyConversionJobs = append(
-				yearlyConversionJobs,
-				concurrency.ConversionJob{
-					Filepath: path,
-					OutDir:   pdfDir,
-				},
-			)
-
-			return nil
-		},
-	)
-
+	yearlyConversionJobs, err := generator.CollectPDFJobs(yearlyXlsxPath)
 	if err != nil {
-		fmt.Println("walking yearly output directory:", err)
+		fmt.Println("collecting yearly PDF jobs:", err)
 		return
 	}
 
@@ -243,6 +189,16 @@ func main() {
 		"Yearly XLSX files found for PDF conversion: %d\n",
 		len(yearlyConversionJobs),
 	)
+
+	// ==================================================
+	// 10. Convert yearly Excel files to PDFs concurrently
+	//
+	// Output:
+	//
+	// output/Financial_Year_2026_2027/Cluster/School/PDF/Employee.pdf
+	// ==================================================
+
+	yearlyPDFStart := time.Now()
 
 	yearlyPDFResults := concurrency.RunPDFConversion(
 		yearlyConversionJobs,
@@ -264,16 +220,8 @@ func main() {
 		},
 	)
 
-	yearlyPDFSuccess := 0
-	yearlyPDFFailed := 0
-
-	for _, result := range yearlyPDFResults {
-		if result.Err != nil {
-			yearlyPDFFailed++
-		} else {
-			yearlyPDFSuccess++
-		}
-	}
+	yearlyPDFSuccess, yearlyPDFFailed :=
+		generator.CountConversionResults(yearlyPDFResults)
 
 	fmt.Printf(
 		"Yearly PDF conversion: %d succeeded, %d failed in %v\n",
@@ -283,7 +231,7 @@ func main() {
 	)
 
 	// ==================================================
-	// 10. Total execution time
+	// 11. Total execution time
 	// ==================================================
 
 	fmt.Printf(

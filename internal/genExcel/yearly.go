@@ -46,23 +46,23 @@ func GenerateYearlyPayslip(
 	// Employee information
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "C1", employee.Name)
-	f.SetCellValue(sheet, "C2", "") // DOB is not available yet
-	f.SetCellValue(sheet, "C3", data.Cluster.Name)
-	f.SetCellValue(sheet, "C4", school.Name)
+	f.SetCellValue(sheet, "B1", employee.Name)
+	f.SetCellValue(sheet, "B2", "") // DOB is not available yet
+	f.SetCellValue(sheet, "B3", data.Cluster.Name)
+	f.SetCellValue(sheet, "B4", school.Name)
 
 	f.SetCellValue(sheet, "G2", employee.Mobile)
 	f.SetCellValue(sheet, "G3", school.Block) // Taluka
 	f.SetCellValue(sheet, "G4", employee.Aadhaar)
 
-	f.SetCellValue(sheet, "L2", employee.Email)
-	f.SetCellValue(sheet, "L3", "Pune") // Fixed district
-	f.SetCellValue(sheet, "L4", employee.PAN)
+	f.SetCellValue(sheet, "K2", employee.Email)
+	f.SetCellValue(sheet, "K3", "Pune") // Fixed district
+	f.SetCellValue(sheet, "K4", employee.PAN)
 
-	f.SetCellValue(sheet, "Q1", employee.BankName)
-	f.SetCellValue(sheet, "Q2", employee.BranchName)
-	f.SetCellValue(sheet, "Q3", employee.BankAccount)
-	f.SetCellValue(sheet, "Q4", employee.BankIFSC)
+	f.SetCellValue(sheet, "P1", employee.BankName)
+	f.SetCellValue(sheet, "P2", employee.BranchName)
+	f.SetCellValue(sheet, "P3", employee.BankAccount)
+	f.SetCellValue(sheet, "P4", employee.BankIFSC)
 
 	// --------------------------------------------------
 	// Financial-year month order
