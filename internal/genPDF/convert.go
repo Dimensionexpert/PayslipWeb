@@ -2,7 +2,6 @@ package pdfgen
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,11 +40,6 @@ func ConvertToPDF(
 			err,
 		)
 	}
-
-	log.Printf(
-		"PDF generated: %s",
-		filepath.Base(inputPath),
-	)
 
 	return nil
 }

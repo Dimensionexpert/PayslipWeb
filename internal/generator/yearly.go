@@ -62,15 +62,9 @@ func ExportYearlyEmployeePayslips(
 	yearlySuccess := 0
 	yearlyFailed := 0
 
-	for index, employee := range yearlyEmployees {
-		fmt.Printf(
-			"Generating yearly payslip %d/%d: %s\n",
-			index+1,
-			len(yearlyEmployees),
-			employee.Name,
-		)
+	for _, employee := range yearlyEmployees {
 
-		yearlyPath, err := GenerateYearlyPayslipForEmployee(
+		_, err := GenerateYearlyPayslipForEmployee(
 			db,
 			yearlyTemplatePath,
 			outputDir,
@@ -88,12 +82,11 @@ func ExportYearlyEmployeePayslips(
 			continue
 		}
 
-		fmt.Printf("Yearly payslip generated: %s\n", yearlyPath)
 		yearlySuccess++
 	}
 
 	fmt.Printf(
-		"Yearly payslip generation: %d succeeded, %d failed\n",
+		"Yearly payslip generated (xlsx): %d succeeded, %d failed\n",
 		yearlySuccess,
 		yearlyFailed,
 	)

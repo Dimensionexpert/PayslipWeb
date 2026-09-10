@@ -18,7 +18,7 @@ func main() {
 	// ==================================================
 
 	clusterPath := "./data/clusters.xlsx"
-	truthPath := "./source/August_2026_School_All Formate Maval copy.xlsx"
+	truthPath := "./source/July_2026_School_All Formate Maval.xlsx"
 	dbPath := "payslip.db"
 
 	outputDir := "output"
@@ -97,7 +97,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Generated payslips: %d\n", len(exportPayslips))
+	fmt.Printf("Monthly payslips generated (xlsx): %d\n", len(exportPayslips))
 
 	// ==================================================
 	// 6. Collect monthly Excel files recursively
@@ -110,7 +110,7 @@ func main() {
 	}
 
 	fmt.Printf(
-		"XLSX files found for PDF conversion: %d\n",
+		"Monthly XLSX files found for PDF conversion: %d\n",
 		len(conversionJobs),
 	)
 
@@ -137,20 +137,16 @@ func main() {
 				return
 			}
 
-			fmt.Printf(
-				"PDF generated: %s\n",
-				result.Filepath,
-			)
 		},
 	)
 
 	success, failed := generator.CountConversionResults(results)
 
 	fmt.Printf(
-		"PDF conversion: %d succeeded, %d failed in %v\n",
+		"Monthly PDF conversion: %d succeeded, %d failed in %v\n",
 		success,
 		failed,
-		time.Since(pdfStart),
+		time.Since(pdfStart).Round(time.Second),
 	)
 
 	// ==================================================
@@ -160,7 +156,6 @@ func main() {
 	// April 2026 to March 2027
 	// ==================================================
 
-	yearlyStart := time.Now()
 	err = generator.ExportYearlyEmployeePayslips(
 		db,
 		yearly_template,
@@ -171,7 +166,6 @@ func main() {
 		fmt.Println("yearly payslip export failed:", err)
 		return
 	}
-	fmt.Println(time.Since(yearlyStart))
 
 	// ==================================================
 	// 9. Collect yearly Excel files recursively
@@ -211,10 +205,6 @@ func main() {
 				return
 			}
 
-			fmt.Printf(
-				"Yearly PDF generated: %s\n",
-				result.Filepath,
-			)
 		},
 	)
 
@@ -225,7 +215,7 @@ func main() {
 		"Yearly PDF conversion: %d succeeded, %d failed in %v\n",
 		yearlyPDFSuccess,
 		yearlyPDFFailed,
-		time.Since(yearlyPDFStart),
+		time.Since(yearlyPDFStart).Round(time.Second),
 	)
 
 	// ==================================================
@@ -234,6 +224,6 @@ func main() {
 
 	fmt.Printf(
 		"Total time: %v\n",
-		time.Since(totalTime),
+		time.Since(totalTime).Round(time.Second),
 	)
 }

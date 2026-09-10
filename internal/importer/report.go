@@ -17,7 +17,7 @@ type ImportReport struct {
 }
 
 func (r ImportReport) Print() {
-	fmt.Println()
+
 	fmt.Println("========== IMPORT REPORT ==========")
 	fmt.Printf("Employees:          %d\n", r.EmployeeCount)
 	fmt.Printf("Schools:            %d\n", r.SchoolCount)
