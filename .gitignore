@@ -49,3 +49,6 @@ payslips/
 
 # LibreOffice temporary lock files
 .~lock.*
+
+# Wails development binary
+cmd/desktop/desktop
