@@ -5,8 +5,11 @@ build/
 *.exe
 *.out
 
+# Frontend dependencies
+node_modules/
+
 # Private payroll input files
-Source/
+source/
 
 # Generated output files
 output/
@@ -17,14 +20,19 @@ payslips/
 *.pdf
 *.xlsx
 
-# Keep the Excel templates in Data/
-!Data/
-!Data/**/*.xlsx
+# Keep Excel templates in data/
+!data/
+!data/**/*.xlsx
 
 # Local databases
 *.db
 *.sqlite
 *.sqlite3
+
+# SQLite temporary files
+*.db-shm
+*.db-wal
+*.db-journal
 
 # Environment and secrets
 .env
@@ -38,7 +46,6 @@ payslips/
 .DS_Store
 .vscode/
 .idea/
-
 
 # LibreOffice temporary lock files
 .~lock.*
