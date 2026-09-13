@@ -1,41 +1,54 @@
 import "./style.css";
 import "./app.css";
 
-import logo from "./assets/images/logo-universal.png";
-import { GetEmployees, GetPayslip } from "../wailsjs/go/main/App";
+import { GetEmployee } from "../wailsjs/go/main/App";
 
 document.querySelector("#app").innerHTML = `
-  <img id="logo" class="logo">
+  <div class="employee-lookup">
+    <h1>Employee Lookup</h1>
 
-  <h1>Payslip</h1>
+    <div class="search-row">
+      <input
+        id="shalarthId"
+        type="text"
+        placeholder="Enter Shalarth ID"
+      />
 
-  <div id="result">Loading employees...</div>
+      <button id="searchButton">Search</button>
+    </div>
 
-  <ul id="employees"></ul>
+    <div id="result"></div>
+  </div>
 `;
 
-document.getElementById("logo").src = logo;
-
+const shalarthIdInput = document.getElementById("shalarthId");
+const searchButton = document.getElementById("searchButton");
 const resultElement = document.getElementById("result");
-const employeesElement = document.getElementById("employees");
 
-GetEmployees()
-  .then((employees) => {
-    resultElement.innerText = `Employees loaded: ${employees.length}`;
+searchButton.addEventListener("click", async () => {
+  const shalarthId = shalarthIdInput.value.trim();
 
-    employeesElement.innerHTML = employees
-      .map((employee) => `<li>${employee.Name}</li>`)
-      .join("");
-  })
-  .catch((err) => {
-    console.error("Failed to get employees:", err);
-    resultElement.innerText = "Failed to load employees";
-  });
+  if (!shalarthId) {
+    resultElement.innerText = "Enter a Shalarth ID.";
+    return;
+  }
 
-GetPayslip("02DEDAAMF6901", 8, 2026)
-  .then((payslip) => {
-    console.log("Payslip:", payslip);
-  })
-  .catch((err) => {
-    console.error("Failed to get payslip:", err);
-  });
+  resultElement.innerText = "Searching...";
+
+  try {
+    const employee = await GetEmployee(shalarthId);
+
+    resultElement.innerHTML = `
+      <div class="employee-card">
+        <h2>${employee.name}</h2>
+        <p>${employee.designation}</p>
+        <p>${employee.schoolName}</p>
+        <p>UDISE: ${employee.udiseCode}</p>
+        <p>Shalarth ID: ${employee.shalarthId}</p>
+      </div>
+    `;
+  } catch (err) {
+    console.error(err);
+    resultElement.innerText = "Employee not found.";
+  }
+});
