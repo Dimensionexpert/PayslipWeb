@@ -75,3 +75,9 @@ func (a *App) GetEmployeesBySchool(
 ) ([]dto.EmployeeSummary, error) {
 	return query.GetEmployeesBySchool(a.db, udise)
 }
+
+func (a *App) GetSchoolsByCluster(
+	cluster string,
+) ([]dto.SchoolSummary, error) {
+	return query.GetSchoolsByCluster(a.db, cluster)
+}

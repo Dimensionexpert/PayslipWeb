@@ -13,4 +13,6 @@ export function GetPayslip(arg1:string,arg2:number,arg3:number):Promise<models.P
 
 export function GetSchool(arg1:string):Promise<dto.SchoolSummary>;
 
+export function GetSchoolsByCluster(arg1:string):Promise<Array<dto.SchoolSummary>>;
+
 export function GetYearlyPayslip(arg1:string,arg2:number):Promise<models.PayslipExportYear>;
