@@ -10,8 +10,16 @@ export function GetEmployees() {
   return window['go']['main']['App']['GetEmployees']();
 }
 
+export function GetEmployeesBySchool(arg1) {
+  return window['go']['main']['App']['GetEmployeesBySchool'](arg1);
+}
+
 export function GetPayslip(arg1, arg2, arg3) {
   return window['go']['main']['App']['GetPayslip'](arg1, arg2, arg3);
+}
+
+export function GetSchool(arg1) {
+  return window['go']['main']['App']['GetSchool'](arg1);
 }
 
 export function GetYearlyPayslip(arg1, arg2) {

@@ -63,3 +63,15 @@ func (a *App) GetYearlyPayslip(
 ) (models.PayslipExportYear, error) {
 	return database.GetYearlyPayslip(a.db, shalarthID, year)
 }
+
+func (a *App) GetSchool(
+	udise string,
+) (dto.SchoolSummary, error) {
+	return query.GetSchool(a.db, udise)
+}
+
+func (a *App) GetEmployeesBySchool(
+	udise string,
+) ([]dto.EmployeeSummary, error) {
+	return query.GetEmployeesBySchool(a.db, udise)
+}

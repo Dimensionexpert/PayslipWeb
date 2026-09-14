@@ -7,6 +7,10 @@ export function GetEmployee(arg1:string):Promise<dto.EmployeeSummary>;
 
 export function GetEmployees():Promise<Array<models.Employee>>;
 
+export function GetEmployeesBySchool(arg1:string):Promise<Array<dto.EmployeeSummary>>;
+
 export function GetPayslip(arg1:string,arg2:number,arg3:number):Promise<models.PayslipExport>;
+
+export function GetSchool(arg1:string):Promise<dto.SchoolSummary>;
 
 export function GetYearlyPayslip(arg1:string,arg2:number):Promise<models.PayslipExportYear>;

@@ -29,3 +29,107 @@
 .employee-card h2 {
     margin-top: 0;
 }
+.employee-button {
+    width: 100%;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.employee-button:hover {
+    opacity: 0.9;
+}
+.school-card {
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 500px;
+    border-radius: 10px;
+    background: #f3f3f3;
+    color: #222;
+}
+
+.employees-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.employee-button {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    background: #f3f3f3;
+    color: #222;
+}
+
+.employee-button:hover {
+    opacity: 0.9;
+}
+
+.employee-button strong,
+.employee-button span,
+.employee-button small {
+    display: block;
+}
+
+.employee-button strong {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.employee-button span {
+    margin-bottom: 5px;
+}
+
+.employee-button small {
+    opacity: 0.7;
+}
+
+.selected-employee {
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f3f3f3;
+    color: #222;
+}
+
+.selected-employee h2 {
+    margin-top: 0;
+}
+
+.selected-employee-info {
+    margin-bottom: 20px;
+}
+
+.selected-employee-info h3 {
+    margin-bottom: 8px;
+}
+
+.payslip-options {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.payslip-options select {
+    padding: 8px;
+}
+
+.payslip-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font: inherit;
+}

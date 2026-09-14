@@ -20,6 +20,20 @@ export namespace dto {
 	        this.udiseCode = source["udiseCode"];
 	    }
 	}
+	export class SchoolSummary {
+	    udiseCode: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SchoolSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.udiseCode = source["udiseCode"];
+	        this.name = source["name"];
+	    }
+	}
 
 }
 

@@ -15,7 +15,7 @@ func GetSchool(db *sql.DB, udise string) (dto.SchoolSummary, error) {
 			school_name
 		FROM schools
 		WHERE udise = ?
-	`).Scan(
+	`, udise).Scan(
 		&school.UDISECode,
 		&school.Name,
 	)
