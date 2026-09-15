@@ -10,6 +10,10 @@ export function GenerateMonthlyPayslip(arg1, arg2, arg3, arg4) {
   return window['go']['main']['App']['GenerateMonthlyPayslip'](arg1, arg2, arg3, arg4);
 }
 
+export function GenerateYearlyPayslip(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GenerateYearlyPayslip'](arg1, arg2, arg3);
+}
+
 export function GetEmployee(arg1) {
   return window['go']['main']['App']['GetEmployee'](arg1);
 }

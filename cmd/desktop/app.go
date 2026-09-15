@@ -173,3 +173,60 @@ func (a *App) ChooseOutputDirectory() (string, error) {
 
 	return path, nil
 }
+
+func (a *App) GenerateYearlyPayslip(
+	shalarthID string,
+	financialYearStart int,
+	outputDir string,
+) (string, error) {
+
+	// XLSX generation
+
+	yearly, err := database.GetYearlyPayslip(
+		a.db,
+		shalarthID,
+		financialYearStart,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	yearlyTemplate := "../../data/yearly_template.xlsx"
+
+	xlsxPath, err := genexcel.GenerateYearlyPayslip(
+		yearlyTemplate,
+		outputDir,
+		yearly,
+		financialYearStart,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// PDF conversion
+
+	pdfDir := filepath.Join(
+		filepath.Dir(xlsxPath),
+		"PDF",
+	)
+
+	if err := genPDF.ConvertToPDF(
+		xlsxPath,
+		pdfDir,
+		0,
+	); err != nil {
+		return "", err
+	}
+
+	pdfFilename := strings.TrimSuffix(
+		filepath.Base(xlsxPath),
+		filepath.Ext(xlsxPath),
+	) + ".pdf"
+
+	pdfPath := filepath.Join(
+		pdfDir,
+		pdfFilename,
+	)
+
+	return pdfPath, nil
+}
