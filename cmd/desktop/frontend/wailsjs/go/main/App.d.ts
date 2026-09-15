@@ -3,6 +3,10 @@
 import {dto} from '../models';
 import {models} from '../models';
 
+export function ChooseOutputDirectory():Promise<string>;
+
+export function GenerateMonthlyPayslip(arg1:string,arg2:number,arg3:number,arg4:string):Promise<string>;
+
 export function GetEmployee(arg1:string):Promise<dto.EmployeeSummary>;
 
 export function GetEmployees():Promise<Array<models.Employee>>;

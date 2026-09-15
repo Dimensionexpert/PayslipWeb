@@ -5,6 +5,8 @@ import {
   GetSchoolsByCluster,
   GetEmployeesBySchool,
   GetPayslip,
+  GenerateMonthlyPayslip,
+  ChooseOutputDirectory,
 } from "../wailsjs/go/main/App";
 
 document.querySelector("#app").innerHTML = `
@@ -216,13 +218,49 @@ function renderSelectedEmployee(employee) {
         </select>
       </div>
 
+      <div class="output-options">
+        <button id="chooseOutputButton">
+          Choose Output Folder
+        </button>
+
+        <p id="outputDirectory">No folder selected</p>
+      </div>
+
       <button id="viewPayslipButton" class="payslip-button">
         View Payslip
+      </button>
+
+      <button id="generateMonthlyPayslipButton" class="payslip-button">
+        Generate Monthly Payslip
       </button>
     </div>
   `;
 
   const viewPayslipButton = document.getElementById("viewPayslipButton");
+  const chooseOutputButton = document.getElementById("chooseOutputButton");
+  const outputDirectoryElement = document.getElementById("outputDirectory");
+  const generateMonthlyPayslipButton = document.getElementById(
+    "generateMonthlyPayslipButton",
+  );
+
+  let outputDir = "";
+
+  chooseOutputButton.addEventListener("click", async () => {
+    try {
+      const selectedPath = await ChooseOutputDirectory();
+
+      if (!selectedPath) {
+        return;
+      }
+
+      outputDir = selectedPath;
+      outputDirectoryElement.innerText = selectedPath;
+    } catch (err) {
+      console.error("ChooseOutputDirectory failed:", err);
+
+      outputDirectoryElement.innerText = `Error: ${err}`;
+    }
+  });
 
   viewPayslipButton.addEventListener("click", async () => {
     const month = Number(document.getElementById("month").value);
@@ -249,6 +287,40 @@ function renderSelectedEmployee(employee) {
       console.error("GetPayslip failed:", err);
 
       payslipResultElement.innerText = `Payslip error: ${err}`;
+    }
+  });
+
+  generateMonthlyPayslipButton.addEventListener("click", async () => {
+    if (!outputDir) {
+      payslipResultElement.innerText = "Choose an output folder first.";
+      return;
+    }
+
+    const month = Number(document.getElementById("month").value);
+    const year = Number(document.getElementById("year").value);
+
+    payslipResultElement.innerText = "Generating payslip...";
+
+    try {
+      const pdfPath = await GenerateMonthlyPayslip(
+        employee.shalarthId,
+        month,
+        year,
+        outputDir,
+      );
+
+      payslipResultElement.innerHTML = `
+        <div class="employee-card">
+          <h2>Payslip Generated</h2>
+          <p>${pdfPath}</p>
+        </div>
+      `;
+
+      console.log("Generated PDF:", pdfPath);
+    } catch (err) {
+      console.error("GenerateMonthlyPayslip failed:", err);
+
+      payslipResultElement.innerText = `Generation error: ${err}`;
     }
   });
 }

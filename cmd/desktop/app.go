@@ -4,10 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
 	"github.com/Dimensionexpert/payslip/internal/database"
+	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
+	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
 	"github.com/Dimensionexpert/payslip/internal/models"
 )
 
@@ -80,4 +87,89 @@ func (a *App) GetSchoolsByCluster(
 	cluster string,
 ) ([]dto.SchoolSummary, error) {
 	return query.GetSchoolsByCluster(a.db, cluster)
+}
+
+func (a *App) GenerateMonthlyPayslip(
+	shalarthID string,
+	month int,
+	year int,
+	outputDir string,
+) (string, error) {
+
+	// XLSX generation
+
+	payslip, err := database.GetPayslip(
+		a.db,
+		shalarthID,
+		month,
+		year,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	monthlyTemplate := "../../data/monthly_template.xlsx"
+
+	xlsxPath, err := genexcel.GenerateMonthlyPayslip(
+		monthlyTemplate,
+		outputDir,
+		payslip,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// PDF conversion
+
+	pdfDir := filepath.Join(
+		filepath.Dir(xlsxPath),
+		"PDF",
+	)
+
+	if err := genPDF.ConvertToPDF(
+		xlsxPath,
+		pdfDir,
+		0,
+	); err != nil {
+		return "", err
+	}
+
+	pdfFilename := strings.TrimSuffix(
+		filepath.Base(xlsxPath),
+		filepath.Ext(xlsxPath),
+	) + ".pdf"
+
+	pdfPath := filepath.Join(
+		pdfDir,
+		pdfFilename,
+	)
+
+	return pdfPath, nil
+}
+
+func (a *App) ChooseOutputDirectory() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("app context is not initialized")
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("getting home directory: %w", err)
+	}
+
+	defaultDirectory := filepath.Join(homeDir, "Downloads")
+
+	path, err := runtime.OpenDirectoryDialog(
+		a.ctx,
+		runtime.OpenDialogOptions{
+			DefaultDirectory:     defaultDirectory,
+			Title:                "Choose output folder",
+			CanCreateDirectories: true,
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("opening output directory dialog: %w", err)
+	}
+
+	return path, nil
 }
