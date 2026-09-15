@@ -5,15 +5,21 @@ import {models} from '../models';
 
 export function ChooseOutputDirectory():Promise<string>;
 
-export function GenerateMonthlyPayslip(arg1:string,arg2:number,arg3:number,arg4:string):Promise<string>;
+export function GenerateMonthlyPayslip(arg1:string,arg2:number,arg3:number):Promise<string>;
 
-export function GenerateYearlyPayslip(arg1:string,arg2:number,arg3:string):Promise<string>;
+export function GenerateMonthlyPayslips(arg1:number,arg2:number):Promise<void>;
+
+export function GenerateYearlyPayslip(arg1:string,arg2:number):Promise<string>;
+
+export function GenerateYearlyPayslips(arg1:number):Promise<void>;
 
 export function GetEmployee(arg1:string):Promise<dto.EmployeeSummary>;
 
 export function GetEmployees():Promise<Array<models.Employee>>;
 
 export function GetEmployeesBySchool(arg1:string):Promise<Array<dto.EmployeeSummary>>;
+
+export function GetOutputDirectory():Promise<string>;
 
 export function GetPayslip(arg1:string,arg2:number,arg3:number):Promise<models.PayslipExport>;
 
@@ -22,3 +28,5 @@ export function GetSchool(arg1:string):Promise<dto.SchoolSummary>;
 export function GetSchoolsByCluster(arg1:string):Promise<Array<dto.SchoolSummary>>;
 
 export function GetYearlyPayslip(arg1:string,arg2:number):Promise<models.PayslipExportYear>;
+
+export function SetOutputDirectory():Promise<string>;

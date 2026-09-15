@@ -6,12 +6,20 @@ export function ChooseOutputDirectory() {
   return window['go']['main']['App']['ChooseOutputDirectory']();
 }
 
-export function GenerateMonthlyPayslip(arg1, arg2, arg3, arg4) {
-  return window['go']['main']['App']['GenerateMonthlyPayslip'](arg1, arg2, arg3, arg4);
+export function GenerateMonthlyPayslip(arg1, arg2, arg3) {
+  return window['go']['main']['App']['GenerateMonthlyPayslip'](arg1, arg2, arg3);
 }
 
-export function GenerateYearlyPayslip(arg1, arg2, arg3) {
-  return window['go']['main']['App']['GenerateYearlyPayslip'](arg1, arg2, arg3);
+export function GenerateMonthlyPayslips(arg1, arg2) {
+  return window['go']['main']['App']['GenerateMonthlyPayslips'](arg1, arg2);
+}
+
+export function GenerateYearlyPayslip(arg1, arg2) {
+  return window['go']['main']['App']['GenerateYearlyPayslip'](arg1, arg2);
+}
+
+export function GenerateYearlyPayslips(arg1) {
+  return window['go']['main']['App']['GenerateYearlyPayslips'](arg1);
 }
 
 export function GetEmployee(arg1) {
@@ -24,6 +32,10 @@ export function GetEmployees() {
 
 export function GetEmployeesBySchool(arg1) {
   return window['go']['main']['App']['GetEmployeesBySchool'](arg1);
+}
+
+export function GetOutputDirectory() {
+  return window['go']['main']['App']['GetOutputDirectory']();
 }
 
 export function GetPayslip(arg1, arg2, arg3) {
@@ -40,4 +52,8 @@ export function GetSchoolsByCluster(arg1) {
 
 export function GetYearlyPayslip(arg1, arg2) {
   return window['go']['main']['App']['GetYearlyPayslip'](arg1, arg2);
+}
+
+export function SetOutputDirectory() {
+  return window['go']['main']['App']['SetOutputDirectory']();
 }

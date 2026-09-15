@@ -5,12 +5,21 @@ import {
   GetSchoolsByCluster,
   GetEmployeesBySchool,
   GetPayslip,
-  ChooseOutputDirectory,
+  GetOutputDirectory,
   GenerateMonthlyPayslip,
   GenerateYearlyPayslip,
+  SetOutputDirectory,
 } from "../wailsjs/go/main/App";
 
 document.querySelector("#app").innerHTML = `
+  <button id="setOutputDirectoryButton">
+    Set Output Directory
+  </button>
+
+  <p id="configuredOutputDirectory">
+    Loading...
+  </p>
+
   <div class="employee-lookup">
     <h1>Payslip Lookup</h1>
 
@@ -31,15 +40,58 @@ document.querySelector("#app").innerHTML = `
   </div>
 `;
 
+const setOutputDirectoryButton = document.getElementById(
+  "setOutputDirectoryButton",
+);
+
+const configuredOutputDirectory = document.getElementById(
+  "configuredOutputDirectory",
+);
+
 const clusterInput = document.getElementById("cluster");
 const clusterSearchButton = document.getElementById("clusterSearchButton");
 
 const schoolsResultElement = document.getElementById("schoolsResult");
 const employeesResultElement = document.getElementById("employeesResult");
+
 const selectedEmployeeResultElement = document.getElementById(
   "selectedEmployeeResult",
 );
+
 const payslipResultElement = document.getElementById("payslipResult");
+
+async function loadOutputDirectory() {
+  try {
+    const path = await GetOutputDirectory();
+
+    if (!path) {
+      configuredOutputDirectory.innerText = "No output directory configured";
+      return;
+    }
+
+    configuredOutputDirectory.innerText = path;
+  } catch (err) {
+    console.error("GetOutputDirectory failed:", err);
+    configuredOutputDirectory.innerText = `Error: ${err}`;
+  }
+}
+
+setOutputDirectoryButton.addEventListener("click", async () => {
+  try {
+    const path = await SetOutputDirectory();
+
+    if (!path) {
+      return;
+    }
+
+    configuredOutputDirectory.innerText = path;
+  } catch (err) {
+    console.error("SetOutputDirectory failed:", err);
+    configuredOutputDirectory.innerText = `Error: ${err}`;
+  }
+});
+
+loadOutputDirectory();
 
 clusterSearchButton.addEventListener("click", async () => {
   const cluster = clusterInput.value.trim();
@@ -88,13 +140,11 @@ clusterSearchButton.addEventListener("click", async () => {
     document.querySelectorAll(".school-button").forEach((button) => {
       button.addEventListener("click", async () => {
         const udise = button.dataset.udise;
-
         await loadEmployees(udise);
       });
     });
   } catch (err) {
     console.error("GetSchoolsByCluster failed:", err);
-
     schoolsResultElement.innerText = `Error: ${err}`;
   }
 });
@@ -148,7 +198,6 @@ async function loadEmployees(udise) {
     });
   } catch (err) {
     console.error("GetEmployeesBySchool failed:", err);
-
     employeesResultElement.innerText = `Error: ${err}`;
   }
 }
@@ -200,7 +249,6 @@ function renderSelectedEmployee(employee) {
       </div>
 
       <div id="monthlyOptions">
-
         <div class="payslip-options">
           <label for="month">Month</label>
 
@@ -237,15 +285,10 @@ function renderSelectedEmployee(employee) {
           </select>
         </div>
 
-        <div class="output-options">
-          <button id="chooseOutputButton">
-            Choose Output Folder
-          </button>
-
-          <p id="outputDirectory">No folder selected</p>
-        </div>
-
-        <button id="viewPayslipButton" class="payslip-button">
+        <button
+          id="viewPayslipButton"
+          class="payslip-button"
+        >
           View Payslip
         </button>
 
@@ -255,13 +298,16 @@ function renderSelectedEmployee(employee) {
         >
           Generate Monthly Payslip
         </button>
-
       </div>
 
-      <div id="yearlyOptions" style="display: none;">
-
+      <div
+        id="yearlyOptions"
+        style="display: none;"
+      >
         <div class="payslip-options">
-          <label for="financialYear">Financial Year</label>
+          <label for="financialYear">
+            Financial Year
+          </label>
 
           <select id="financialYear">
             ${Array.from({ length: 5 }, (_, index) => currentYear - index)
@@ -279,22 +325,16 @@ function renderSelectedEmployee(employee) {
           </select>
         </div>
 
-        <button id="chooseYearlyOutputButton">
-          Choose Output Folder
-        </button>
-
-        <p id="yearlyOutputDirectory">No folder selected</p>
-
         <button
           id="generateYearlyPayslipButton"
           class="payslip-button"
         >
           Generate Yearly Payslip
         </button>
-
       </div>
     </div>
   `;
+
   const monthlyTab = document.getElementById("monthlyTab");
   const yearlyTab = document.getElementById("yearlyTab");
 
@@ -318,34 +358,15 @@ function renderSelectedEmployee(employee) {
   });
 
   const viewPayslipButton = document.getElementById("viewPayslipButton");
-  const chooseOutputButton = document.getElementById("chooseOutputButton");
-  const outputDirectoryElement = document.getElementById("outputDirectory");
+
   const generateMonthlyPayslipButton = document.getElementById(
     "generateMonthlyPayslipButton",
   );
 
-  let outputDir = "";
-
-  chooseOutputButton.addEventListener("click", async () => {
-    try {
-      const selectedPath = await ChooseOutputDirectory();
-
-      if (!selectedPath) {
-        return;
-      }
-
-      outputDir = selectedPath;
-      outputDirectoryElement.innerText = selectedPath;
-    } catch (err) {
-      console.error("ChooseOutputDirectory failed:", err);
-
-      outputDirectoryElement.innerText = `Error: ${err}`;
-    }
-  });
-
   viewPayslipButton.addEventListener("click", async () => {
     const month = Number(document.getElementById("month").value);
-    const year = Number(document.getElementById("year").value);
+
+    const year = Number(document.getElementById("monthlyYear").value);
 
     payslipResultElement.innerText = "Loading payslip...";
 
@@ -356,10 +377,17 @@ function renderSelectedEmployee(employee) {
         <div class="employee-card">
           <h2>Salary</h2>
 
-          <p>Employee: ${employee.name}</p>
-          <p>Month: ${months[month - 1]} ${year}</p>
+          <p>
+            Employee: ${employee.name}
+          </p>
 
-          <h1>₹${payslip.Payslip.EmployeeNetSalary}</h1>
+          <p>
+            Month: ${months[month - 1]} ${year}
+          </p>
+
+          <h1>
+            ₹${payslip.Payslip.EmployeeNetSalary}
+          </h1>
         </div>
       `;
 
@@ -372,13 +400,9 @@ function renderSelectedEmployee(employee) {
   });
 
   generateMonthlyPayslipButton.addEventListener("click", async () => {
-    if (!outputDir) {
-      payslipResultElement.innerText = "Choose an output folder first.";
-      return;
-    }
-
     const month = Number(document.getElementById("month").value);
-    const year = Number(document.getElementById("year").value);
+
+    const year = Number(document.getElementById("monthlyYear").value);
 
     payslipResultElement.innerText = "Generating payslip...";
 
@@ -387,15 +411,14 @@ function renderSelectedEmployee(employee) {
         employee.shalarthId,
         month,
         year,
-        outputDir,
       );
 
       payslipResultElement.innerHTML = `
-        <div class="employee-card">
-          <h2>Payslip Generated</h2>
-          <p>${pdfPath}</p>
-        </div>
-      `;
+          <div class="employee-card">
+            <h2>Payslip Generated</h2>
+            <p>${pdfPath}</p>
+          </div>
+        `;
 
       console.log("Generated PDF:", pdfPath);
     } catch (err) {
@@ -404,43 +427,12 @@ function renderSelectedEmployee(employee) {
       payslipResultElement.innerText = `Generation error: ${err}`;
     }
   });
-  const chooseYearlyOutputButton = document.getElementById(
-    "chooseYearlyOutputButton",
-  );
 
-  const yearlyOutputDirectoryElement = document.getElementById(
-    "yearlyOutputDirectory",
-  );
-
-  let yearlyOutputDir = "";
-
-  chooseYearlyOutputButton.addEventListener("click", async () => {
-    try {
-      const selectedPath = await ChooseOutputDirectory();
-
-      if (!selectedPath) {
-        return;
-      }
-
-      yearlyOutputDir = selectedPath;
-      yearlyOutputDirectoryElement.innerText = selectedPath;
-    } catch (err) {
-      console.error("ChooseOutputDirectory failed:", err);
-
-      yearlyOutputDirectoryElement.innerText = `Error: ${err}`;
-    }
-  });
   const generateYearlyPayslipButton = document.getElementById(
     "generateYearlyPayslipButton",
   );
 
   generateYearlyPayslipButton.addEventListener("click", async () => {
-    if (!yearlyOutputDir) {
-      payslipResultElement.innerText = "Choose an output folder first.";
-
-      return;
-    }
-
     const financialYear = Number(
       document.getElementById("financialYear").value,
     );
@@ -451,15 +443,14 @@ function renderSelectedEmployee(employee) {
       const pdfPath = await GenerateYearlyPayslip(
         employee.shalarthId,
         financialYear,
-        yearlyOutputDir,
       );
 
       payslipResultElement.innerHTML = `
-        <div class="employee-card">
-          <h2>Yearly Payslip Generated</h2>
-          <p>${pdfPath}</p>
-        </div>
-      `;
+          <div class="employee-card">
+            <h2>Yearly Payslip Generated</h2>
+            <p>${pdfPath}</p>
+          </div>
+        `;
 
       console.log("Generated yearly PDF:", pdfPath);
     } catch (err) {

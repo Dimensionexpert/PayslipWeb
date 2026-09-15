@@ -7,20 +7,25 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/config"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
+	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
+	"github.com/Dimensionexpert/payslip/internal/generator"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"github.com/Dimensionexpert/payslip/internal/models"
 )
 
 type App struct {
-	ctx context.Context
-	db  *sql.DB
+	ctx    context.Context
+	db     *sql.DB
+	config config.Config
 }
 
 func NewApp() (*App, error) {
@@ -29,7 +34,21 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
-	return &App{db: db}, nil
+	cfg, err := config.Load()
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("loading config: %w", err)
+	}
+
+	if err := config.Save(cfg); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("saving config: %w", err)
+	}
+
+	return &App{
+		db:     db,
+		config: cfg,
+	}, nil
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -93,8 +112,13 @@ func (a *App) GenerateMonthlyPayslip(
 	shalarthID string,
 	month int,
 	year int,
-	outputDir string,
 ) (string, error) {
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return "", fmt.Errorf("output directory is not configured")
+	}
 
 	// XLSX generation
 
@@ -177,7 +201,6 @@ func (a *App) ChooseOutputDirectory() (string, error) {
 func (a *App) GenerateYearlyPayslip(
 	shalarthID string,
 	financialYearStart int,
-	outputDir string,
 ) (string, error) {
 
 	// XLSX generation
@@ -192,6 +215,11 @@ func (a *App) GenerateYearlyPayslip(
 	}
 
 	yearlyTemplate := "../../data/yearly_template.xlsx"
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return "", fmt.Errorf("output directory is not configured")
+	}
 
 	xlsxPath, err := genexcel.GenerateYearlyPayslip(
 		yearlyTemplate,
@@ -229,4 +257,196 @@ func (a *App) GenerateYearlyPayslip(
 	)
 
 	return pdfPath, nil
+}
+
+func (a *App) GenerateMonthlyPayslips(
+	month int,
+	year int,
+) error {
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return fmt.Errorf("output directory is not configured")
+	}
+
+	payslips, err := database.GetPayslips(
+		a.db,
+		month,
+		year,
+	)
+	if err != nil {
+		return fmt.Errorf("fetching payslips: %w", err)
+	}
+
+	if len(payslips) == 0 {
+		return fmt.Errorf("no payslips found")
+	}
+
+	monthlyTemplate := "../../data/monthly_template.xlsx"
+
+	if err := genexcel.GenerateMonthlyPayslips(
+		monthlyTemplate,
+		outputDir,
+		payslips,
+	); err != nil {
+		return fmt.Errorf(
+			"generating monthly Excel files: %w",
+			err,
+		)
+	}
+
+	monthlyXlsxPath := filepath.Join(
+		outputDir,
+		fmt.Sprintf("%s_%d", time.Month(month), year),
+	)
+
+	conversionJobs, err := generator.CollectPDFJobs(
+		monthlyXlsxPath,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"collecting monthly PDF jobs: %w",
+			err,
+		)
+	}
+
+	results := concurrency.RunPDFConversion(
+		conversionJobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"MONTHLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	success, failed := generator.CountConversionResults(results)
+
+	fmt.Printf(
+		"Monthly PDF conversion: %d succeeded, %d failed\n",
+		success,
+		failed,
+	)
+
+	if failed > 0 {
+		return fmt.Errorf(
+			"monthly PDF conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return nil
+}
+
+func (a *App) GenerateYearlyPayslips(
+	financialYearStart int,
+) error {
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return fmt.Errorf("output directory is not configured")
+	}
+
+	yearlyTemplate := "../../data/yearly_template.xlsx"
+
+	if err := generator.ExportYearlyEmployeePayslips(
+		a.db,
+		yearlyTemplate,
+		outputDir,
+		financialYearStart,
+	); err != nil {
+		return fmt.Errorf(
+			"generating yearly Excel files: %w",
+			err,
+		)
+	}
+
+	yearlyXlsxPath := filepath.Join(
+		outputDir,
+		fmt.Sprintf(
+			"Financial_Year_%d_%d",
+			financialYearStart,
+			financialYearStart+1,
+		),
+	)
+
+	conversionJobs, err := generator.CollectPDFJobs(
+		yearlyXlsxPath,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"collecting yearly PDF jobs: %w",
+			err,
+		)
+	}
+
+	results := concurrency.RunPDFConversion(
+		conversionJobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"YEARLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	success, failed := generator.CountConversionResults(results)
+
+	fmt.Printf(
+		"Yearly PDF conversion: %d succeeded, %d failed\n",
+		success,
+		failed,
+	)
+
+	if failed > 0 {
+		return fmt.Errorf(
+			"yearly PDF conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return nil
+}
+
+func (a *App) SetOutputDirectory() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("app context is not initialized")
+	}
+
+	path, err := runtime.OpenDirectoryDialog(
+		a.ctx,
+		runtime.OpenDialogOptions{
+			Title:                "Choose Payslip Output Folder",
+			CanCreateDirectories: true,
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("opening output directory dialog: %w", err)
+	}
+
+	if path == "" {
+		return "", nil
+	}
+
+	a.config.OutputDir = path
+
+	if err := config.Save(a.config); err != nil {
+		return "", fmt.Errorf("saving config: %w", err)
+	}
+
+	return path, nil
+}
+
+func (a *App) GetOutputDirectory() string {
+	return a.config.OutputDir
 }
