@@ -18,7 +18,7 @@ func main() {
 	// ==================================================
 
 	clusterPath := "./data/clusters.xlsx"
-	truthPath := "./source/August_2026_School_All Formate Maval.xlsx"
+	truthPath := "./source/September_2026_School_All Formate Maval.xlsx"
 	dbPath := "payslip.db"
 
 	outputDir := "output"

@@ -54,6 +54,14 @@ export function GetYearlyPayslip(arg1, arg2) {
   return window['go']['main']['App']['GetYearlyPayslip'](arg1, arg2);
 }
 
+export function OpenMonthlyPayslip(arg1, arg2, arg3) {
+  return window['go']['main']['App']['OpenMonthlyPayslip'](arg1, arg2, arg3);
+}
+
+export function OpenYearlyPayslip(arg1, arg2) {
+  return window['go']['main']['App']['OpenYearlyPayslip'](arg1, arg2);
+}
+
 export function SetOutputDirectory() {
   return window['go']['main']['App']['SetOutputDirectory']();
 }

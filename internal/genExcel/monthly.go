@@ -12,7 +12,7 @@ import (
 	"github.com/Dimensionexpert/payslip/internal/models"
 )
 
-func sanitizeFilename(s string) string {
+func SanitizeFilename(s string) string {
 	return strings.Join(strings.Fields(s), "_")
 }
 
@@ -156,12 +156,12 @@ func GenerateMonthlyPayslip(
 
 	clusterDir := filepath.Join(
 		periodDir,
-		sanitizeFilename(data.Cluster.Name),
+		SanitizeFilename(data.Cluster.Name),
 	)
 
 	schoolDir := filepath.Join(
 		clusterDir,
-		sanitizeFilename(school.Name),
+		SanitizeFilename(school.Name),
 	)
 
 	if err := os.MkdirAll(schoolDir, 0755); err != nil {
@@ -170,7 +170,7 @@ func GenerateMonthlyPayslip(
 
 	filename := fmt.Sprintf(
 		"%s.xlsx",
-		sanitizeFilename(employee.Name),
+		SanitizeFilename(employee.Name),
 	)
 
 	outputPath := filepath.Join(schoolDir, filename)

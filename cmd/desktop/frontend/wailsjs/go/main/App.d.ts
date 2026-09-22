@@ -29,4 +29,8 @@ export function GetSchoolsByCluster(arg1:string):Promise<Array<dto.SchoolSummary
 
 export function GetYearlyPayslip(arg1:string,arg2:number):Promise<models.PayslipExportYear>;
 
+export function OpenMonthlyPayslip(arg1:string,arg2:number,arg3:number):Promise<void>;
+
+export function OpenYearlyPayslip(arg1:string,arg2:number):Promise<void>;
+
 export function SetOutputDirectory():Promise<string>;

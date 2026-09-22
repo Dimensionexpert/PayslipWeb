@@ -204,12 +204,12 @@ func GenerateYearlyPayslip(
 
 	clusterDir := filepath.Join(
 		financialYearDir,
-		sanitizeFilename(data.Cluster.Name),
+		SanitizeFilename(data.Cluster.Name),
 	)
 
 	schoolDir := filepath.Join(
 		clusterDir,
-		sanitizeFilename(school.Name),
+		SanitizeFilename(school.Name),
 	)
 
 	if err := os.MkdirAll(schoolDir, 0755); err != nil {
@@ -221,7 +221,7 @@ func GenerateYearlyPayslip(
 
 	filename := fmt.Sprintf(
 		"%s_%d_%d.xlsx",
-		sanitizeFilename(employee.Name),
+		SanitizeFilename(employee.Name),
 		startYear,
 		endYear,
 	)

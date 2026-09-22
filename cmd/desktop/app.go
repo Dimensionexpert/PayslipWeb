@@ -5,9 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	goRuntime "runtime"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/config"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
@@ -449,4 +452,138 @@ func (a *App) SetOutputDirectory() (string, error) {
 
 func (a *App) GetOutputDirectory() string {
 	return a.config.OutputDir
+}
+
+func (a *App) OpenMonthlyPayslip(
+	shalarthID string,
+	month int,
+	year int,
+) error {
+
+	payslip, err := database.GetPayslip(
+		a.db,
+		shalarthID,
+		month,
+		year,
+	)
+	if err != nil {
+		return fmt.Errorf("fetching payslip: %w", err)
+	}
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return fmt.Errorf("output directory is not configured")
+	}
+
+	pdfPath := genexcel.MonthlyPayslipPDFPath(
+		outputDir,
+		payslip,
+	)
+
+	if _, err := os.Stat(pdfPath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf(
+				"payslip PDF not found: %s",
+				pdfPath,
+			)
+		}
+
+		return fmt.Errorf(
+			"checking payslip PDF: %w",
+			err,
+		)
+	}
+
+	// Native system viewer launcher replacing BrowserOpenURL
+	var cmd *exec.Cmd
+	switch goRuntime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", pdfPath)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", pdfPath)
+	case "darwin":
+		cmd = exec.Command("open", pdfPath)
+	default:
+		return fmt.Errorf("unsupported platform for opening files")
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to open PDF launcher: %w", err)
+	}
+
+	fmt.Println(pdfPath)
+
+	return nil
+}
+
+func (a *App) OpenYearlyPayslip(
+	shalarthID string,
+	financialYearStart int,
+) error {
+
+	yearly, err := database.GetYearlyPayslip(
+		a.db,
+		shalarthID,
+		financialYearStart,
+	)
+	if err != nil {
+		return fmt.Errorf("fetching yearly payslip: %w", err)
+	}
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return fmt.Errorf("output directory is not configured")
+	}
+
+	pdfPath := genexcel.YearlyPayslipPDFPath(
+		outputDir,
+		yearly,
+		financialYearStart,
+	)
+
+	if _, err := os.Stat(pdfPath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf(
+				"yearly payslip PDF not found: %s",
+				pdfPath,
+			)
+		}
+
+		return fmt.Errorf(
+			"checking yearly payslip PDF: %w",
+			err,
+		)
+	}
+
+	var cmd *exec.Cmd
+
+	switch goRuntime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", pdfPath)
+	case "windows":
+		cmd = exec.Command(
+			"rundll32",
+			"url.dll,FileProtocolHandler",
+			pdfPath,
+		)
+	case "darwin":
+		cmd = exec.Command("open", pdfPath)
+	default:
+		return fmt.Errorf(
+			"unsupported platform for opening files",
+		)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf(
+			"failed to open PDF launcher: %w",
+			err,
+		)
+	}
+
+	fmt.Println(pdfPath)
+
+	return nil
 }
