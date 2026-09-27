@@ -1,7 +1,14 @@
 import { useState } from "react";
 import "./PayslipSelector.css";
+import {
+  OpenMonthlyPayslip,
+  OpenYearlyPayslip,
+  GenerateMonthlyPayslip,
+  GenerateYearlyPayslip,
+} from "../../wailsjs/go/main/App";
 
 function PayslipSelector({ employee, mode = "view" }) {
+  const isViewMode = mode === "view";
   const date = new Date();
 
   const [type, setType] = useState("monthly");
@@ -24,11 +31,52 @@ function PayslipSelector({ employee, mode = "view" }) {
     { value: 12, name: "December" },
   ];
 
+  async function handleAction() {
+    try {
+      if (isViewMode) {
+        if (type === "monthly") {
+          await OpenMonthlyPayslip(employee.shalarthId, month, year);
+
+          console.log("Monthly payslip opened successfully");
+        } else {
+          const financialYearStart = Number(financialYear.split("-")[0]);
+
+          await OpenYearlyPayslip(employee.shalarthId, financialYearStart);
+
+          console.log("Yearly payslip opened successfully");
+        }
+
+        return;
+      } else {
+        if (type === "monthly") {
+          const result = await GenerateMonthlyPayslip(
+            employee.shalarthId,
+            month,
+            year,
+          );
+
+          console.log("Monthly payslip generated:", result);
+        } else {
+          const financialYearStart = Number(financialYear.split("-")[0]);
+
+          const result = await GenerateYearlyPayslip(
+            employee.shalarthId,
+            financialYearStart,
+          );
+
+          console.log("Yearly payslip generated:", result);
+        }
+      }
+    } catch (error) {
+      console.error("Payslip action failed:", error);
+    }
+  }
+
   return (
     <div className="payslip-selector">
       <div className="payslip-employee">
         <strong>{employee.name}</strong>
-        <span>{employee.id}</span>
+        <span>{employee.shalarthId}</span>
       </div>
 
       <div className="payslip-type">
@@ -91,8 +139,8 @@ function PayslipSelector({ employee, mode = "view" }) {
         </div>
       )}
 
-      <button className="payslip-action">
-        {mode === "view" ? "View Payslip" : "Generate Payslip"}
+      <button className="payslip-action" onClick={handleAction}>
+        {isViewMode ? "View Payslip" : "Generate Payslip"}
       </button>
     </div>
   );

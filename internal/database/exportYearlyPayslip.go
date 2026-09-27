@@ -121,11 +121,14 @@ func GetYearlyPayslip(
 	defer rows.Close()
 
 	var export models.PayslipExportYear
+	found := false
 
 	for rows.Next() {
+		found = true
+
 		var payslip models.PayslipRecord
 
-		err := rows.Scan(
+		if err := rows.Scan(
 			// Cluster
 			&export.Cluster.ID,
 			&export.Cluster.Name,
@@ -212,9 +215,7 @@ func GetYearlyPayslip(
 			&payslip.NGRTotalDeduction,
 			&payslip.EmployeeNetSalary,
 			&payslip.Remarks,
-		)
-
-		if err != nil {
+		); err != nil {
 			return models.PayslipExportYear{}, fmt.Errorf(
 				"scan yearly payslip row: %w",
 				err,
@@ -228,6 +229,15 @@ func GetYearlyPayslip(
 		return models.PayslipExportYear{}, fmt.Errorf(
 			"iterate yearly payslip rows: %w",
 			err,
+		)
+	}
+
+	if !found {
+		return models.PayslipExportYear{}, fmt.Errorf(
+			"no payslip data found for Shalarth ID %s for financial year %d-%d",
+			shalarthID,
+			year,
+			year+1,
 		)
 	}
 

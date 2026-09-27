@@ -587,3 +587,7 @@ func (a *App) OpenYearlyPayslip(
 
 	return nil
 }
+
+func (a *App) GetClusters() ([]dto.ClusterSummary, error) {
+	return query.GetClusters(a.db)
+}
