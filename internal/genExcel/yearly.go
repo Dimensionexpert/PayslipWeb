@@ -55,14 +55,14 @@ func GenerateYearlyPayslip(
 	f.SetCellValue(sheet, "G3", school.Block) // Taluka
 	f.SetCellValue(sheet, "G4", employee.Aadhaar)
 
-	f.SetCellValue(sheet, "K2", employee.Email)
-	f.SetCellValue(sheet, "K3", "Pune") // Fixed district
-	f.SetCellValue(sheet, "K4", employee.PAN)
+	f.SetCellValue(sheet, "J2", employee.Email)
+	f.SetCellValue(sheet, "J3", "Pune") // Fixed district
+	f.SetCellValue(sheet, "J4", employee.PAN)
 
-	f.SetCellValue(sheet, "P1", employee.BankName)
-	f.SetCellValue(sheet, "P2", employee.BranchName)
-	f.SetCellValue(sheet, "P3", employee.BankAccount)
-	f.SetCellValue(sheet, "P4", employee.BankIFSC)
+	f.SetCellValue(sheet, "G1", employee.BankName)
+	f.SetCellValue(sheet, "O2", employee.BranchName)
+	f.SetCellValue(sheet, "O3", employee.BankAccount)
+	f.SetCellValue(sheet, "O4", employee.BankIFSC)
 
 	// --------------------------------------------------
 	// Financial-year month order
