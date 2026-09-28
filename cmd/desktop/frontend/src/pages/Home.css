@@ -1,0 +1,86 @@
+.home {
+    width: min(100% - 64px, 900px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 48px 0 64px;
+}
+
+.home-header {
+    margin-bottom: 40px;
+}
+
+.home-brand h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 600;
+}
+
+.home-brand p {
+    margin: 6px 0 0;
+    color: #697386;
+}
+
+.home-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.home-card {
+    width: 100%;
+    min-height: 92px;
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    border: 1px solid #e1e5eb;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #172033;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        background 150ms ease;
+}
+
+.home-card:hover {
+    border-color: #c8ced8;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(23, 32, 51, 0.05);
+}
+
+.home-card-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e1e5eb;
+    border-radius: 10px;
+    color: #172033;
+    font-size: 20px;
+}
+
+.home-card div:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.home-card strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.home-card span {
+    color: #697386;
+    font-size: 13px;
+}
+
+.home-card-arrow {
+    color: #8b94a3;
+    font-size: 20px;
+}

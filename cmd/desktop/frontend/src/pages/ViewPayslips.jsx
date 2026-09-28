@@ -4,10 +4,11 @@ import {
   GetClusters,
   GetSchoolsByCluster,
   GetEmployeesBySchool,
+  GenerateMonthlyPayslipsForScope,
 } from "../../wailsjs/go/main/App";
 import "./ViewPayslips.css";
 
-function ViewPayslips({ mode = "view" }) {
+function ViewPayslips({ mode = "view", onHome }) {
   const [search, setSearch] = useState("");
   const [clusters, setClusters] = useState([]);
   const [schools, setSchools] = useState([]);
@@ -49,6 +50,26 @@ function ViewPayslips({ mode = "view" }) {
           <h1>{selectedSchool.name}</h1>
           <p>Select an employee to view or generate their payslip.</p>
         </header>
+
+        <button
+          onClick={async () => {
+            try {
+              const count = await GenerateMonthlyPayslipsForScope(
+                "school",
+                "",
+                selectedSchool.udiseCode,
+                8,
+                2026,
+              );
+
+              console.log("Generated PDFs:", count);
+            } catch (err) {
+              console.error("Generation failed:", err);
+            }
+          }}
+        >
+          Test School Generation
+        </button>
 
         <section>
           <h2>Employees</h2>
@@ -207,6 +228,9 @@ function ViewPayslips({ mode = "view" }) {
   /* * Cluster list */ return (
     <main className="view-payslips">
       {" "}
+      <button className="payslip-back" onClick={onHome}>
+        ← Home
+      </button>
       <header>
         {" "}
         <h1>View Payslips</h1>{" "}

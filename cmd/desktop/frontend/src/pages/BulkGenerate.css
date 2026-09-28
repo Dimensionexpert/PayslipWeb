@@ -1,0 +1,92 @@
+.bulk-generate {
+    width: min(100% - 64px, 900px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 48px 0 64px;
+}
+
+.bulk-header {
+    margin: 32px 0 40px;
+}
+
+.bulk-header h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 600;
+}
+
+.bulk-header p {
+    margin: 6px 0 0;
+    color: #697386;
+}
+
+.bulk-section {
+    margin-bottom: 32px;
+}
+
+.bulk-section h2 {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.bulk-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bulk-option {
+    width: 100%;
+    padding: 16px 18px;
+    border: 1px solid #e1e5eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #172033;
+    text-align: left;
+    cursor: pointer;
+}
+
+.bulk-option strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.bulk-option span {
+    display: block;
+    margin-top: 4px;
+    color: #697386;
+    font-size: 13px;
+}
+
+.bulk-option.selected {
+    border-color: #172033;
+}
+
+.bulk-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.bulk-picker label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bulk-picker select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #e1e5eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+}
+
+.bulk-selector {
+    margin-top: 32px;
+}

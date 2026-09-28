@@ -111,6 +111,103 @@ func (a *App) GetSchoolsByCluster(
 	return query.GetSchoolsByCluster(a.db, cluster)
 }
 
+func (a *App) monthlyScopeRoot(
+	scope string,
+	cluster string,
+	udise string,
+	month int,
+	year int,
+) (string, error) {
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return "", fmt.Errorf("output directory is not configured")
+	}
+
+	root := filepath.Join(
+		outputDir,
+		fmt.Sprintf("%s_%d", time.Month(month), year),
+	)
+
+	switch scope {
+	case "all":
+		return root, nil
+
+	case "school":
+		employees, err := query.GetEmployeesBySchool(a.db, udise)
+		if err != nil {
+			return "", err
+		}
+
+		if len(employees) == 0 {
+			return "", fmt.Errorf("no employees found for school %s", udise)
+		}
+
+		payslip, err := database.GetPayslip(
+			a.db,
+			employees[0].ShalarthID,
+			month,
+			year,
+		)
+		if err != nil {
+			return "", err
+		}
+
+		pdfPath := genexcel.MonthlyPayslipPDFPath(
+			outputDir,
+			payslip,
+		)
+
+		return filepath.Dir(filepath.Dir(pdfPath)), nil
+
+	case "cluster":
+		schools, err := query.GetSchoolsByCluster(a.db, cluster)
+		if err != nil {
+			return "", err
+		}
+
+		for _, school := range schools {
+			employees, err := query.GetEmployeesBySchool(
+				a.db,
+				school.UDISECode,
+			)
+			if err != nil {
+				return "", err
+			}
+
+			if len(employees) == 0 {
+				continue
+			}
+
+			payslip, err := database.GetPayslip(
+				a.db,
+				employees[0].ShalarthID,
+				month,
+				year,
+			)
+			if err != nil {
+				return "", err
+			}
+
+			pdfPath := genexcel.MonthlyPayslipPDFPath(
+				outputDir,
+				payslip,
+			)
+
+			return filepath.Dir(
+				filepath.Dir(
+					filepath.Dir(pdfPath),
+				),
+			), nil
+		}
+
+		return "", fmt.Errorf("no employees found in cluster %s", cluster)
+
+	default:
+		return "", fmt.Errorf("invalid generation scope: %s", scope)
+	}
+}
+
 func (a *App) GenerateMonthlyPayslip(
 	shalarthID string,
 	month int,
@@ -267,45 +364,16 @@ func (a *App) GenerateMonthlyPayslips(
 	year int,
 ) error {
 
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return fmt.Errorf("output directory is not configured")
-	}
-
-	payslips, err := database.GetPayslips(
-		a.db,
+	monthlyRoot, err := a.EnsureMonthlyXLSX(
 		month,
 		year,
 	)
 	if err != nil {
-		return fmt.Errorf("fetching payslips: %w", err)
+		return err
 	}
 
-	if len(payslips) == 0 {
-		return fmt.Errorf("no payslips found")
-	}
-
-	monthlyTemplate := "../../data/monthly_template.xlsx"
-
-	if err := genexcel.GenerateMonthlyPayslips(
-		monthlyTemplate,
-		outputDir,
-		payslips,
-	); err != nil {
-		return fmt.Errorf(
-			"generating monthly Excel files: %w",
-			err,
-		)
-	}
-
-	monthlyXlsxPath := filepath.Join(
-		outputDir,
-		fmt.Sprintf("%s_%d", time.Month(month), year),
-	)
-
-	conversionJobs, err := generator.CollectPDFJobs(
-		monthlyXlsxPath,
+	conversionJobs, err := generator.CollectMissingPDFJobs(
+		monthlyRoot,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -350,37 +418,15 @@ func (a *App) GenerateYearlyPayslips(
 	financialYearStart int,
 ) error {
 
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return fmt.Errorf("output directory is not configured")
-	}
-
-	yearlyTemplate := "../../data/yearly_template.xlsx"
-
-	if err := generator.ExportYearlyEmployeePayslips(
-		a.db,
-		yearlyTemplate,
-		outputDir,
+	yearlyRoot, err := a.EnsureYearlyXLSX(
 		financialYearStart,
-	); err != nil {
-		return fmt.Errorf(
-			"generating yearly Excel files: %w",
-			err,
-		)
+	)
+	if err != nil {
+		return err
 	}
 
-	yearlyXlsxPath := filepath.Join(
-		outputDir,
-		fmt.Sprintf(
-			"Financial_Year_%d_%d",
-			financialYearStart,
-			financialYearStart+1,
-		),
-	)
-
-	conversionJobs, err := generator.CollectPDFJobs(
-		yearlyXlsxPath,
+	conversionJobs, err := generator.CollectMissingPDFJobs(
+		yearlyRoot,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -590,4 +636,344 @@ func (a *App) OpenYearlyPayslip(
 
 func (a *App) GetClusters() ([]dto.ClusterSummary, error) {
 	return query.GetClusters(a.db)
+}
+
+func (a *App) EnsureMonthlyXLSX(
+	month int,
+	year int,
+) (string, error) {
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return "", fmt.Errorf("output directory is not configured")
+	}
+
+	payslips, err := database.GetPayslips(
+		a.db,
+		month,
+		year,
+	)
+	if err != nil {
+		return "", fmt.Errorf("fetching payslips: %w", err)
+	}
+
+	if len(payslips) == 0 {
+		return "", fmt.Errorf("no payslips found")
+	}
+
+	monthlyRoot := filepath.Join(
+		outputDir,
+		fmt.Sprintf("%s_%d", time.Month(month), year),
+	)
+
+	readyMarker := filepath.Join(
+		monthlyRoot,
+		".xlsx-ready",
+	)
+
+	if _, err := os.Stat(readyMarker); err == nil {
+		return monthlyRoot, nil
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("checking monthly XLSX cache: %w", err)
+	}
+
+	monthlyTemplate := "../../data/monthly_template.xlsx"
+
+	if err := genexcel.GenerateMonthlyPayslips(
+		monthlyTemplate,
+		outputDir,
+		payslips,
+	); err != nil {
+		return "", fmt.Errorf(
+			"generating monthly Excel files: %w",
+			err,
+		)
+	}
+
+	if err := os.WriteFile(
+		readyMarker,
+		[]byte{},
+		0644,
+	); err != nil {
+		return "", fmt.Errorf(
+			"writing monthly XLSX ready marker: %w",
+			err,
+		)
+	}
+
+	return monthlyRoot, nil
+}
+
+func (a *App) EnsureYearlyXLSX(
+	financialYearStart int,
+) (string, error) {
+
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return "", fmt.Errorf("output directory is not configured")
+	}
+
+	yearlyRoot := filepath.Join(
+		outputDir,
+		fmt.Sprintf(
+			"Financial_Year_%d_%d",
+			financialYearStart,
+			financialYearStart+1,
+		),
+	)
+
+	readyMarker := filepath.Join(
+		yearlyRoot,
+		".xlsx-ready",
+	)
+
+	if _, err := os.Stat(readyMarker); err == nil {
+		return yearlyRoot, nil
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("checking yearly XLSX cache: %w", err)
+	}
+
+	yearlyTemplate := "../../data/yearly_template.xlsx"
+
+	if err := generator.ExportYearlyEmployeePayslips(
+		a.db,
+		yearlyTemplate,
+		outputDir,
+		financialYearStart,
+	); err != nil {
+		return "", fmt.Errorf(
+			"generating yearly Excel files: %w",
+			err,
+		)
+	}
+
+	if err := os.WriteFile(
+		readyMarker,
+		[]byte{},
+		0644,
+	); err != nil {
+		return "", fmt.Errorf(
+			"writing yearly XLSX ready marker: %w",
+			err,
+		)
+	}
+
+	return yearlyRoot, nil
+}
+
+func (a *App) GenerateMonthlyPayslipsForScope(
+	scope string,
+	cluster string,
+	udise string,
+	month int,
+	year int,
+) (int, error) {
+	// Make sure all XLSX files for this month exist.
+	if _, err := a.EnsureMonthlyXLSX(month, year); err != nil {
+		return 0, err
+	}
+
+	// Pick the directory based on the requested scope.
+	root, err := a.monthlyScopeRoot(
+		scope,
+		cluster,
+		udise,
+		month,
+		year,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	// Convert only PDFs that don't exist yet.
+	jobs, err := generator.CollectMissingPDFJobs(root)
+	if err != nil {
+		return 0, fmt.Errorf("collecting PDF jobs: %w", err)
+	}
+
+	if len(jobs) == 0 {
+		return 0, nil
+	}
+
+	results := concurrency.RunPDFConversion(
+		jobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"MONTHLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	_, failed := generator.CountConversionResults(results)
+
+	if failed > 0 {
+		return 0, fmt.Errorf(
+			"monthly PDF conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return len(jobs), nil
+}
+
+func (a *App) yearlyScopeRoot(
+	scope string,
+	cluster string,
+	udise string,
+	financialYearStart int,
+) (string, error) {
+	outputDir := a.config.OutputDir
+
+	if outputDir == "" {
+		return "", fmt.Errorf("output directory is not configured")
+	}
+
+	root := filepath.Join(
+		outputDir,
+		fmt.Sprintf(
+			"Financial_Year_%d_%d",
+			financialYearStart,
+			financialYearStart+1,
+		),
+	)
+
+	switch scope {
+	case "all":
+		return root, nil
+
+	case "school":
+		employees, err := query.GetEmployeesBySchool(a.db, udise)
+		if err != nil {
+			return "", err
+		}
+
+		if len(employees) == 0 {
+			return "", fmt.Errorf("no employees found for school %s", udise)
+		}
+
+		yearly, err := database.GetYearlyPayslip(
+			a.db,
+			employees[0].ShalarthID,
+			financialYearStart,
+		)
+		if err != nil {
+			return "", err
+		}
+
+		pdfPath := genexcel.YearlyPayslipPDFPath(
+			outputDir,
+			yearly,
+			financialYearStart,
+		)
+
+		return filepath.Dir(filepath.Dir(pdfPath)), nil
+
+	case "cluster":
+		schools, err := query.GetSchoolsByCluster(a.db, cluster)
+		if err != nil {
+			return "", err
+		}
+
+		for _, school := range schools {
+			employees, err := query.GetEmployeesBySchool(
+				a.db,
+				school.UDISECode,
+			)
+			if err != nil {
+				return "", err
+			}
+
+			if len(employees) == 0 {
+				continue
+			}
+
+			yearly, err := database.GetYearlyPayslip(
+				a.db,
+				employees[0].ShalarthID,
+				financialYearStart,
+			)
+			if err != nil {
+				continue
+			}
+
+			pdfPath := genexcel.YearlyPayslipPDFPath(
+				outputDir,
+				yearly,
+				financialYearStart,
+			)
+
+			return filepath.Dir(
+				filepath.Dir(
+					filepath.Dir(pdfPath),
+				),
+			), nil
+		}
+
+		return "", fmt.Errorf("no employees found in cluster %s", cluster)
+
+	default:
+		return "", fmt.Errorf("invalid generation scope: %s", scope)
+	}
+}
+
+func (a *App) GenerateYearlyPayslipsForScope(
+	scope string,
+	cluster string,
+	udise string,
+	financialYearStart int,
+) (int, error) {
+	if _, err := a.EnsureYearlyXLSX(financialYearStart); err != nil {
+		return 0, err
+	}
+
+	root, err := a.yearlyScopeRoot(
+		scope,
+		cluster,
+		udise,
+		financialYearStart,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	jobs, err := generator.CollectMissingPDFJobs(root)
+	if err != nil {
+		return 0, fmt.Errorf("collecting PDF jobs: %w", err)
+	}
+
+	if len(jobs) == 0 {
+		return 0, nil
+	}
+
+	results := concurrency.RunPDFConversion(
+		jobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"YEARLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	_, failed := generator.CountConversionResults(results)
+
+	if failed > 0 {
+		return 0, fmt.Errorf(
+			"yearly PDF conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return len(jobs), nil
 }

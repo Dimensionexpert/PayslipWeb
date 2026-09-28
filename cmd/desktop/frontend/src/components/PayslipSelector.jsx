@@ -1,14 +1,26 @@
 import { useState } from "react";
 import "./PayslipSelector.css";
+
 import {
   OpenMonthlyPayslip,
   OpenYearlyPayslip,
   GenerateMonthlyPayslip,
   GenerateYearlyPayslip,
+  GenerateMonthlyPayslipsForScope,
+  GenerateYearlyPayslipsForScope,
 } from "../../wailsjs/go/main/App";
 
-function PayslipSelector({ employee, mode = "view" }) {
+function PayslipSelector({
+  employee = null,
+  mode = "view",
+  scope = "all",
+  cluster = "",
+  udise = "",
+  schoolName = "",
+}) {
   const isViewMode = mode === "view";
+  const isBulkMode = mode === "bulk";
+
   const date = new Date();
 
   const [type, setType] = useState("monthly");
@@ -39,6 +51,9 @@ function PayslipSelector({ employee, mode = "view" }) {
     setFeedback("");
 
     try {
+      // --------------------------------
+      // View individual payslip
+      // --------------------------------
       if (isViewMode) {
         if (type === "monthly") {
           await OpenMonthlyPayslip(employee.shalarthId, month, year);
@@ -56,6 +71,48 @@ function PayslipSelector({ employee, mode = "view" }) {
         return;
       }
 
+      // --------------------------------
+      // Bulk generation
+      // --------------------------------
+      if (isBulkMode) {
+        if (type === "monthly") {
+          const count = await GenerateMonthlyPayslipsForScope(
+            scope,
+            cluster,
+            udise,
+            month,
+            year,
+          );
+
+          setFeedback(
+            count === 0
+              ? "All payslips are already generated"
+              : `${count} payslip${count === 1 ? "" : "s"} generated successfully`,
+          );
+        } else {
+          const financialYearStart = Number(financialYear.split("-")[0]);
+
+          const count = await GenerateYearlyPayslipsForScope(
+            scope,
+            cluster,
+            udise,
+            financialYearStart,
+          );
+
+          setFeedback(
+            count === 0
+              ? "All yearly payslips are already generated"
+              : `${count} payslip${count === 1 ? "" : "s"} generated successfully`,
+          );
+        }
+
+        setStatus("success");
+        return;
+      }
+
+      // --------------------------------
+      // Generate individual payslip
+      // --------------------------------
       if (type === "monthly") {
         const result = await GenerateMonthlyPayslip(
           employee.shalarthId,
@@ -89,8 +146,17 @@ function PayslipSelector({ employee, mode = "view" }) {
   return (
     <div className="payslip-selector">
       <div className="payslip-employee">
-        <strong>{employee.name}</strong>
-        <span>{employee.shalarthId}</span>
+        <strong>{employee ? employee.name : "Bulk Generation"}</strong>
+
+        <span>
+          {employee
+            ? employee.shalarthId
+            : scope === "all"
+              ? "All clusters and schools"
+              : scope === "cluster"
+                ? cluster
+                : schoolName || "Selected school"}
+        </span>
       </div>
 
       <div className="payslip-type">
@@ -152,6 +218,7 @@ function PayslipSelector({ employee, mode = "view" }) {
           </label>
         </div>
       )}
+
       <button
         className="payslip-action"
         onClick={handleAction}
@@ -163,8 +230,11 @@ function PayslipSelector({ employee, mode = "view" }) {
             : "Generating..."
           : isViewMode
             ? "View Payslip"
-            : "Generate Payslip"}
+            : isBulkMode
+              ? "Generate Payslips"
+              : "Generate Payslip"}
       </button>
+
       {status !== "idle" && (
         <div className={`payslip-feedback ${status}`}>{feedback}</div>
       )}

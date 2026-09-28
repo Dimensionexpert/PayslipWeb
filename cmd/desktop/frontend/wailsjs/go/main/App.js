@@ -6,6 +6,14 @@ export function ChooseOutputDirectory() {
   return window['go']['main']['App']['ChooseOutputDirectory']();
 }
 
+export function EnsureMonthlyXLSX(arg1, arg2) {
+  return window['go']['main']['App']['EnsureMonthlyXLSX'](arg1, arg2);
+}
+
+export function EnsureYearlyXLSX(arg1) {
+  return window['go']['main']['App']['EnsureYearlyXLSX'](arg1);
+}
+
 export function GenerateMonthlyPayslip(arg1, arg2, arg3) {
   return window['go']['main']['App']['GenerateMonthlyPayslip'](arg1, arg2, arg3);
 }
@@ -14,12 +22,20 @@ export function GenerateMonthlyPayslips(arg1, arg2) {
   return window['go']['main']['App']['GenerateMonthlyPayslips'](arg1, arg2);
 }
 
+export function GenerateMonthlyPayslipsForScope(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['GenerateMonthlyPayslipsForScope'](arg1, arg2, arg3, arg4, arg5);
+}
+
 export function GenerateYearlyPayslip(arg1, arg2) {
   return window['go']['main']['App']['GenerateYearlyPayslip'](arg1, arg2);
 }
 
 export function GenerateYearlyPayslips(arg1) {
   return window['go']['main']['App']['GenerateYearlyPayslips'](arg1);
+}
+
+export function GenerateYearlyPayslipsForScope(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['GenerateYearlyPayslipsForScope'](arg1, arg2, arg3, arg4);
 }
 
 export function GetClusters() {
