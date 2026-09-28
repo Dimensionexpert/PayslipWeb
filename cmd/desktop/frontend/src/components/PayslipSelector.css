@@ -97,3 +97,25 @@
 .payslip-action:hover {
     background: #252f43;
 }
+
+.payslip-feedback {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.payslip-feedback.success {
+    background: #f0f7f2;
+    color: #2f6b42;
+}
+
+.payslip-feedback.error {
+    background: #fbf1f1;
+    color: #a33a3a;
+}
+
+.payslip-action:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}

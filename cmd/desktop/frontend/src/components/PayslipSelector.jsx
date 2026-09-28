@@ -16,6 +16,9 @@ function PayslipSelector({ employee, mode = "view" }) {
   const [year, setYear] = useState(date.getFullYear());
   const [financialYear, setFinancialYear] = useState("2026-27");
 
+  const [status, setStatus] = useState("idle");
+  const [feedback, setFeedback] = useState("");
+
   const months = [
     { value: 1, name: "January" },
     { value: 2, name: "February" },
@@ -32,43 +35,54 @@ function PayslipSelector({ employee, mode = "view" }) {
   ];
 
   async function handleAction() {
+    setStatus("loading");
+    setFeedback("");
+
     try {
       if (isViewMode) {
         if (type === "monthly") {
           await OpenMonthlyPayslip(employee.shalarthId, month, year);
 
-          console.log("Monthly payslip opened successfully");
+          setFeedback("Payslip opened successfully");
         } else {
           const financialYearStart = Number(financialYear.split("-")[0]);
 
           await OpenYearlyPayslip(employee.shalarthId, financialYearStart);
 
-          console.log("Yearly payslip opened successfully");
+          setFeedback("Yearly payslip opened successfully");
         }
 
+        setStatus("success");
         return;
-      } else {
-        if (type === "monthly") {
-          const result = await GenerateMonthlyPayslip(
-            employee.shalarthId,
-            month,
-            year,
-          );
-
-          console.log("Monthly payslip generated:", result);
-        } else {
-          const financialYearStart = Number(financialYear.split("-")[0]);
-
-          const result = await GenerateYearlyPayslip(
-            employee.shalarthId,
-            financialYearStart,
-          );
-
-          console.log("Yearly payslip generated:", result);
-        }
       }
+
+      if (type === "monthly") {
+        const result = await GenerateMonthlyPayslip(
+          employee.shalarthId,
+          month,
+          year,
+        );
+
+        console.log("Monthly payslip generated:", result);
+        setFeedback("Monthly payslip generated successfully");
+      } else {
+        const financialYearStart = Number(financialYear.split("-")[0]);
+
+        const result = await GenerateYearlyPayslip(
+          employee.shalarthId,
+          financialYearStart,
+        );
+
+        console.log("Yearly payslip generated:", result);
+        setFeedback("Yearly payslip generated successfully");
+      }
+
+      setStatus("success");
     } catch (error) {
       console.error("Payslip action failed:", error);
+
+      setStatus("error");
+      setFeedback(error?.message || String(error));
     }
   }
 
@@ -138,10 +152,22 @@ function PayslipSelector({ employee, mode = "view" }) {
           </label>
         </div>
       )}
-
-      <button className="payslip-action" onClick={handleAction}>
-        {isViewMode ? "View Payslip" : "Generate Payslip"}
+      <button
+        className="payslip-action"
+        onClick={handleAction}
+        disabled={status === "loading"}
+      >
+        {status === "loading"
+          ? isViewMode
+            ? "Opening..."
+            : "Generating..."
+          : isViewMode
+            ? "View Payslip"
+            : "Generate Payslip"}
       </button>
+      {status !== "idle" && (
+        <div className={`payslip-feedback ${status}`}>{feedback}</div>
+      )}
     </div>
   );
 }
