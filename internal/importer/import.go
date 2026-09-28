@@ -2,7 +2,6 @@ package importer
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/Dimensionexpert/payslip/internal/database"
 	"github.com/Dimensionexpert/payslip/internal/excel"
@@ -12,6 +11,8 @@ func ImportPayroll(
 	clusterPath string,
 	truthPath string,
 	dbPath string,
+	month int,
+	year int,
 ) (ImportReport, int, int, error) {
 
 	// Read cluster workbook
@@ -43,13 +44,6 @@ func ImportPayroll(
 	if err != nil {
 		return ImportReport{}, 0, 0,
 			fmt.Errorf("reading payroll file: %w", err)
-	}
-
-	// Detect payroll period
-	month, year, err := ParsePeriod(filepath.Base(truthPath))
-	if err != nil {
-		return ImportReport{}, 0, 0,
-			fmt.Errorf("detecting payroll period: %w", err)
 	}
 
 	// Convert rows into Go structs

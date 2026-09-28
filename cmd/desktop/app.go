@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,19 +21,27 @@ import (
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
 	"github.com/Dimensionexpert/payslip/internal/generator"
+	"github.com/Dimensionexpert/payslip/internal/importer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"github.com/Dimensionexpert/payslip/internal/models"
 )
 
 type App struct {
-	ctx    context.Context
-	db     *sql.DB
-	config config.Config
+	ctx         context.Context
+	db          *sql.DB
+	config      config.Config
+	clusterPath string
+	dbPath      string
+	sourcePath  string
 }
 
 func NewApp() (*App, error) {
-	db, err := database.Open("../../payslip.db")
+	dbPath := "../../payslip.db"
+	clusterPath := "../../data/clusters.xlsx"
+	sourcePath := "../../source"
+
+	db, err := database.Open(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
@@ -49,8 +58,11 @@ func NewApp() (*App, error) {
 	}
 
 	return &App{
-		db:     db,
-		config: cfg,
+		db:          db,
+		dbPath:      dbPath,
+		clusterPath: clusterPath,
+		sourcePath:  sourcePath,
+		config:      cfg,
 	}, nil
 }
 
@@ -976,4 +988,79 @@ func (a *App) GenerateYearlyPayslipsForScope(
 	}
 
 	return len(jobs), nil
+}
+
+func (a *App) ImportPayroll(
+	truthPath string,
+	month int,
+	year int,
+) (importer.ImportReport, error) {
+	if err := os.MkdirAll(a.sourcePath, 0755); err != nil {
+		return importer.ImportReport{},
+			fmt.Errorf("creating source directory: %w", err)
+	}
+
+	destination := filepath.Join(
+		a.sourcePath,
+		filepath.Base(truthPath),
+	)
+
+	sourceAbs, err := filepath.Abs(truthPath)
+	if err != nil {
+		return importer.ImportReport{},
+			fmt.Errorf("resolving payroll file path: %w", err)
+	}
+
+	destinationAbs, err := filepath.Abs(destination)
+	if err != nil {
+		return importer.ImportReport{},
+			fmt.Errorf("resolving source path: %w", err)
+	}
+
+	if sourceAbs != destinationAbs {
+		src, err := os.Open(truthPath)
+		if err != nil {
+			return importer.ImportReport{},
+				fmt.Errorf("opening selected payroll file: %w", err)
+		}
+		defer src.Close()
+
+		dst, err := os.Create(destination)
+		if err != nil {
+			return importer.ImportReport{},
+				fmt.Errorf("creating source payroll file: %w", err)
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return importer.ImportReport{},
+				fmt.Errorf("copying payroll file: %w", err)
+		}
+	}
+
+	report, _, _, err := importer.ImportPayroll(
+		a.clusterPath,
+		destination,
+		a.dbPath,
+		month,
+		year,
+	)
+
+	if err != nil {
+		return report, err
+	}
+
+	return report, nil
+}
+
+func (a *App) SelectPayrollFile() (string, error) {
+	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Payroll File",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Excel Files (*.xlsx)",
+				Pattern:     "*.xlsx",
+			},
+		},
+	})
 }

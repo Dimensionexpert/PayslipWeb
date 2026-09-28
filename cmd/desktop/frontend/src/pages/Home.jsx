@@ -11,10 +11,7 @@ function Home({ onNavigate }) {
       </header>
 
       <section className="home-menu">
-        <button
-          className="home-card"
-          onClick={() => onNavigate("view")}
-        >
+        <button className="home-card" onClick={() => onNavigate("view")}>
           <div className="home-card-icon">⌕</div>
 
           <div>
@@ -25,10 +22,7 @@ function Home({ onNavigate }) {
           <span className="home-card-arrow">→</span>
         </button>
 
-        <button
-          className="home-card"
-          onClick={() => onNavigate("generate")}
-        >
+        <button className="home-card" onClick={() => onNavigate("generate")}>
           <div className="home-card-icon">＋</div>
 
           <div>
@@ -39,10 +33,18 @@ function Home({ onNavigate }) {
           <span className="home-card-arrow">→</span>
         </button>
 
-        <button
-          className="home-card"
-          onClick={() => onNavigate("settings")}
-        >
+        <button className="home-card" onClick={() => onNavigate("import")}>
+          <div className="home-card-icon">⇩</div>
+
+          <div>
+            <strong>Import Payroll</strong>
+            <span>Import a monthly payroll Excel file.</span>
+          </div>
+
+          <span className="home-card-arrow">→</span>
+        </button>
+
+        <button className="home-card" onClick={() => onNavigate("settings")}>
           <div className="home-card-icon">⚙</div>
 
           <div>

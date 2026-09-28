@@ -51,6 +51,39 @@ export namespace dto {
 
 }
 
+export namespace importer {
+	
+	export class ImportReport {
+	    EmployeeCount: number;
+	    SchoolCount: number;
+	    ClusterMappingCount: number;
+	    MissingClusterCount: number;
+	    UnknownUDISECount: number;
+	    DuplicateUDISECount: number;
+	    MissingClusters: string[];
+	    UnknownUDISE: string[];
+	    DuplicateUDISE: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ImportReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.EmployeeCount = source["EmployeeCount"];
+	        this.SchoolCount = source["SchoolCount"];
+	        this.ClusterMappingCount = source["ClusterMappingCount"];
+	        this.MissingClusterCount = source["MissingClusterCount"];
+	        this.UnknownUDISECount = source["UnknownUDISECount"];
+	        this.DuplicateUDISECount = source["DuplicateUDISECount"];
+	        this.MissingClusters = source["MissingClusters"];
+	        this.UnknownUDISE = source["UnknownUDISE"];
+	        this.DuplicateUDISE = source["DuplicateUDISE"];
+	    }
+	}
+
+}
+
 export namespace models {
 	
 	export class Cluster {

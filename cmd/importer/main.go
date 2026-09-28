@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
@@ -35,10 +36,18 @@ func main() {
 	// 2. Import payroll data into the database
 	// ==================================================
 
-	report, month, year, err := importer.ImportPayroll(
+	month, year, err := importer.ParsePeriod(filepath.Base(truthPath))
+	if err != nil {
+		fmt.Println("Detecting payroll period failed:", err)
+		return
+	}
+
+	report, _, _, err := importer.ImportPayroll(
 		clusterPath,
 		truthPath,
 		dbPath,
+		month,
+		year,
 	)
 	if err != nil {
 		fmt.Println("Import failed:", err)

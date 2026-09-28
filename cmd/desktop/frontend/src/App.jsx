@@ -2,6 +2,8 @@ import { useState } from "react";
 import Home from "./pages/Home";
 import ViewPayslips from "./pages/ViewPayslips";
 import BulkGenerate from "./pages/BulkGenerate";
+import ImportPayroll from "./pages/ImportPayroll";
+import Settings from "./pages/Settings";
 import "./App.css";
 
 function App() {
@@ -14,18 +16,12 @@ function App() {
   if (page === "generate") {
     return <BulkGenerate onHome={() => setPage("home")} />;
   }
+  if (page === "import") {
+    return <ImportPayroll onHome={() => setPage("home")} />;
+  }
 
   if (page === "settings") {
-    return (
-      <main className="app-page">
-        <button className="payslip-back" onClick={() => setPage("home")}>
-          ← Home
-        </button>
-
-        <h1>Settings</h1>
-        <p>Settings will be added here.</p>
-      </main>
-    );
+    return <Settings onHome={() => setPage("home")} />;
   }
 
   return <Home onNavigate={setPage} />;

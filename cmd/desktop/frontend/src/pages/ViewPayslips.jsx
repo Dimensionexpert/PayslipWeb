@@ -51,26 +51,6 @@ function ViewPayslips({ mode = "view", onHome }) {
           <p>Select an employee to view or generate their payslip.</p>
         </header>
 
-        <button
-          onClick={async () => {
-            try {
-              const count = await GenerateMonthlyPayslipsForScope(
-                "school",
-                "",
-                selectedSchool.udiseCode,
-                8,
-                2026,
-              );
-
-              console.log("Generated PDFs:", count);
-            } catch (err) {
-              console.error("Generation failed:", err);
-            }
-          }}
-        >
-          Test School Generation
-        </button>
-
         <section>
           <h2>Employees</h2>
 
