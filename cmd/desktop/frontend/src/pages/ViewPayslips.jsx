@@ -17,14 +17,22 @@ function ViewPayslips({ mode = "view", onHome }) {
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeAction, setEmployeeAction] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schoolsError, setSchoolsError] = useState("");
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [employeesError, setEmployeesError] = useState("");
   useEffect(() => {
     async function loadClusters() {
       try {
         const result = await GetClusters();
-        console.log("Clusters:", result);
-        setClusters(result);
+        setClusters(result || []);
       } catch (error) {
         console.error("Failed to load clusters:", error);
+        setLoadError(error?.message || String(error));
+      } finally {
+        setLoading(false);
       }
     }
     loadClusters();
@@ -116,6 +124,52 @@ function ViewPayslips({ mode = "view", onHome }) {
   }
 
   if (selectedSchool) {
+    if (employeesLoading) {
+      return (
+        <main className="view-payslips">
+          <button className="payslip-back" onClick={onHome}>
+            ← Back
+          </button>
+
+          <div className="view-state">
+            <h2>Loading employees...</h2>
+          </div>
+        </main>
+      );
+    }
+
+    if (employeesError) {
+      return (
+        <main className="view-payslips">
+          <button className="payslip-back" onClick={onHome}>
+            ← Back
+          </button>
+
+          <div className="view-state">
+            <h2>Unable to load employees</h2>
+            <p>{employeesError}</p>
+          </div>
+        </main>
+      );
+    }
+
+    if (employees.length === 0) {
+      return (
+        <main className="view-payslips">
+          <button
+            className="payslip-back"
+            onClick={() => setSelectedCluster(null)}
+          >
+            ← Back
+          </button>
+
+          <div className="view-state">
+            <h2>No employee found</h2>
+            <p>This school does not have any employee available.</p>
+          </div>
+        </main>
+      );
+    }
     return (
       <main className="view-payslips">
         <button
@@ -155,6 +209,52 @@ function ViewPayslips({ mode = "view", onHome }) {
   }
 
   /* * Cluster selected */ if (selectedCluster) {
+    if (schoolsLoading) {
+      return (
+        <main className="view-payslips">
+          <button className="payslip-back" onClick={onHome}>
+            ← Back
+          </button>
+
+          <div className="view-state">
+            <h2>Loading schools...</h2>
+          </div>
+        </main>
+      );
+    }
+
+    if (schoolsError) {
+      return (
+        <main className="view-payslips">
+          <button className="payslip-back" onClick={onHome}>
+            ← Back
+          </button>
+
+          <div className="view-state">
+            <h2>Unable to load schools</h2>
+            <p>{schoolsError}</p>
+          </div>
+        </main>
+      );
+    }
+
+    if (schools.length === 0) {
+      return (
+        <main className="view-payslips">
+          <button
+            className="payslip-back"
+            onClick={() => setSelectedCluster(null)}
+          >
+            ← Back
+          </button>
+
+          <div className="view-state">
+            <h2>No schools found</h2>
+            <p>This cluster does not have any schools available.</p>
+          </div>
+        </main>
+      );
+    }
     return (
       <main className="view-payslips">
         {" "}
@@ -185,7 +285,7 @@ function ViewPayslips({ mode = "view", onHome }) {
 
                     console.log("Employees:", result);
 
-                    setEmployees(result);
+                    setEmployees(result || []);
                     setSelectedSchool(school);
                   } catch (error) {
                     console.error("Failed to load employees:", error);
@@ -205,6 +305,51 @@ function ViewPayslips({ mode = "view", onHome }) {
       </main>
     );
   }
+
+  if (loading) {
+    return (
+      <main className="view-payslips">
+        <button className="payslip-back" onClick={onHome}>
+          ← Back
+        </button>
+
+        <div className="view-state">
+          <h2>Loading payslips...</h2>
+        </div>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="view-payslips">
+        <button className="payslip-back" onClick={onHome}>
+          ← Back
+        </button>
+
+        <div className="view-state">
+          <h2>Unable to load payslips</h2>
+          <p>{loadError}</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (clusters.length === 0) {
+    return (
+      <main className="view-payslips">
+        <button className="payslip-back" onClick={onHome}>
+          ← Back
+        </button>
+
+        <div className="view-state">
+          <h2>No payroll data available</h2>
+          <p>Import a payroll file to get started.</p>
+        </div>
+      </main>
+    );
+  }
+
   /* * Cluster list */ return (
     <main className="view-payslips">
       {" "}
@@ -239,7 +384,7 @@ function ViewPayslips({ mode = "view", onHome }) {
                 try {
                   const result = await GetSchoolsByCluster(cluster.name);
                   console.log("Schools:", result);
-                  setSchools(result);
+                  setSchools(result || []);
                   setSelectedCluster(cluster);
                 } catch (error) {
                   console.error("Failed to load schools:", error);

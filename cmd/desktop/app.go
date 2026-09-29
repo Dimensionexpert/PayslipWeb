@@ -15,7 +15,9 @@ import (
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/config"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
+	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/paths"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
+	"github.com/Dimensionexpert/payslip/cmd/desktop/resources"
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
@@ -28,41 +30,47 @@ import (
 )
 
 type App struct {
-	ctx         context.Context
-	db          *sql.DB
-	config      config.Config
-	clusterPath string
-	dbPath      string
-	sourcePath  string
+	ctx    context.Context
+	db     *sql.DB
+	config config.Config
+	paths  dto.AppPaths
 }
 
 func NewApp() (*App, error) {
-	dbPath := "../../payslip.db"
-	clusterPath := "../../data/clusters.xlsx"
-	sourcePath := "../../source"
+	// Resolve application paths.
+	appPaths, err := paths.New()
+	if err != nil {
+		return nil, fmt.Errorf("resolving application paths: %w", err)
+	}
 
-	db, err := database.Open(dbPath)
+	// Materialize bundled resources.
+	if err := resources.Materialize(appPaths.ResourcesDir); err != nil {
+		return nil, fmt.Errorf("materializing resources: %w", err)
+	}
+
+	// Open the application database.
+	db, err := database.Open(appPaths.DBPath)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
+	// Load application configuration.
 	cfg, err := config.Load()
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("loading config: %w", err)
 	}
 
+	// Save configuration if needed.
 	if err := config.Save(cfg); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("saving config: %w", err)
 	}
 
 	return &App{
-		db:          db,
-		dbPath:      dbPath,
-		clusterPath: clusterPath,
-		sourcePath:  sourcePath,
-		config:      cfg,
+		db:     db,
+		paths:  appPaths,
+		config: cfg,
 	}, nil
 }
 
@@ -244,7 +252,7 @@ func (a *App) GenerateMonthlyPayslip(
 		return "", err
 	}
 
-	monthlyTemplate := "../../data/monthly_template.xlsx"
+	monthlyTemplate := filepath.Join(a.paths.ResourcesDir, "monthly_template.xlsx")
 
 	xlsxPath, err := genexcel.GenerateMonthlyPayslip(
 		monthlyTemplate,
@@ -326,7 +334,7 @@ func (a *App) GenerateYearlyPayslip(
 		return "", err
 	}
 
-	yearlyTemplate := "../../data/yearly_template.xlsx"
+	yearlyTemplate := filepath.Join(a.paths.ResourcesDir, "yearly_template.xlsx")
 	outputDir := a.config.OutputDir
 
 	if outputDir == "" {
@@ -690,7 +698,7 @@ func (a *App) EnsureMonthlyXLSX(
 		return "", fmt.Errorf("checking monthly XLSX cache: %w", err)
 	}
 
-	monthlyTemplate := "../../data/monthly_template.xlsx"
+	monthlyTemplate := filepath.Join(a.paths.ResourcesDir, "monthly_template.xlsx")
 
 	if err := genexcel.GenerateMonthlyPayslips(
 		monthlyTemplate,
@@ -747,7 +755,7 @@ func (a *App) EnsureYearlyXLSX(
 		return "", fmt.Errorf("checking yearly XLSX cache: %w", err)
 	}
 
-	yearlyTemplate := "../../data/yearly_template.xlsx"
+	yearlyTemplate := filepath.Join(a.paths.ResourcesDir, "yearly_template.xlsx")
 
 	if err := generator.ExportYearlyEmployeePayslips(
 		a.db,
@@ -995,13 +1003,13 @@ func (a *App) ImportPayroll(
 	month int,
 	year int,
 ) (importer.ImportReport, error) {
-	if err := os.MkdirAll(a.sourcePath, 0755); err != nil {
+	if err := os.MkdirAll(a.paths.SourceDir, 0755); err != nil {
 		return importer.ImportReport{},
 			fmt.Errorf("creating source directory: %w", err)
 	}
 
 	destination := filepath.Join(
-		a.sourcePath,
+		a.paths.SourceDir,
 		filepath.Base(truthPath),
 	)
 
@@ -1037,11 +1045,14 @@ func (a *App) ImportPayroll(
 				fmt.Errorf("copying payroll file: %w", err)
 		}
 	}
-
+	clusterPath := filepath.Join(
+		a.paths.ResourcesDir,
+		"clusters.xlsx",
+	)
 	report, _, _, err := importer.ImportPayroll(
-		a.clusterPath,
+		clusterPath,
 		destination,
-		a.dbPath,
+		a.paths.DBPath,
 		month,
 		year,
 	)

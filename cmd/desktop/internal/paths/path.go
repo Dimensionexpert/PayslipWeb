@@ -4,24 +4,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
 )
 
-type AppPaths struct {
-
-	// Application resources shipped with the app.
-	ResourcesDir string // Example: clusters.xlsx, monthly_template.xlsx, yearly_template.xlsx.
-	DataDir      string // Persistent application data owned by the user.
-	DBPath       string // SQLite database containing imported payroll data.
-	SourceDir    string // Archived payroll XLSX files selected/imported by the user.
-	CacheDir     string // Rebuildable generated XLSX cache.
-}
-
-func New() (AppPaths, error) {
+func New() (dto.AppPaths, error) {
 
 	// Get the OS-specific directory intended for application data/configuration.
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		return AppPaths{}, fmt.Errorf(
+		return dto.AppPaths{}, fmt.Errorf(
 			"getting user config directory: %w",
 			err,
 		)
@@ -30,7 +22,7 @@ func New() (AppPaths, error) {
 	// Get the OS-specific directory intended for cache data.
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
-		return AppPaths{}, fmt.Errorf(
+		return dto.AppPaths{}, fmt.Errorf(
 			"getting user cache directory: %w",
 			err,
 		)
@@ -57,24 +49,24 @@ func New() (AppPaths, error) {
 	// Create directories required at runtime.
 
 	if err := os.MkdirAll(resourceDir, 0755); err != nil {
-		return AppPaths{}, fmt.Errorf("creating resource directory: %w", err)
+		return dto.AppPaths{}, fmt.Errorf("creating resource directory: %w", err)
 	}
 
 	if err := os.MkdirAll(sourceDir, 0755); err != nil {
-		return AppPaths{}, fmt.Errorf(
+		return dto.AppPaths{}, fmt.Errorf(
 			"creating source directory: %w",
 			err,
 		)
 	}
 
 	if err := os.MkdirAll(appCacheDir, 0755); err != nil {
-		return AppPaths{}, fmt.Errorf(
+		return dto.AppPaths{}, fmt.Errorf(
 			"creating cache directory: %w",
 			err,
 		)
 	}
 
-	return AppPaths{
+	return dto.AppPaths{
 		ResourcesDir: resourceDir,
 		DataDir:      dataDir,
 		DBPath:       dbPath,
