@@ -30,6 +30,8 @@ export function GetEmployees():Promise<Array<models.Employee>>;
 
 export function GetEmployeesBySchool(arg1:string):Promise<Array<dto.EmployeeSummary>>;
 
+export function GetMonthlyBulkOutputDirectory(arg1:string,arg2:string,arg3:string,arg4:number,arg5:number):Promise<string>;
+
 export function GetOutputDirectory():Promise<string>;
 
 export function GetPayslip(arg1:string,arg2:number,arg3:number):Promise<models.PayslipExport>;
@@ -38,9 +40,13 @@ export function GetSchool(arg1:string):Promise<dto.SchoolSummary>;
 
 export function GetSchoolsByCluster(arg1:string):Promise<Array<dto.SchoolSummary>>;
 
+export function GetYearlyBulkOutputDirectory(arg1:string,arg2:string,arg3:string,arg4:number):Promise<string>;
+
 export function GetYearlyPayslip(arg1:string,arg2:number):Promise<models.PayslipExportYear>;
 
 export function ImportPayroll(arg1:string,arg2:number,arg3:number):Promise<importer.ImportReport>;
+
+export function OpenDir(arg1:string):Promise<void>;
 
 export function OpenMonthlyPayslip(arg1:string,arg2:number,arg3:number):Promise<void>;
 

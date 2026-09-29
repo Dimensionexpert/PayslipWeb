@@ -54,6 +54,10 @@ export function GetEmployeesBySchool(arg1) {
   return window['go']['main']['App']['GetEmployeesBySchool'](arg1);
 }
 
+export function GetMonthlyBulkOutputDirectory(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['GetMonthlyBulkOutputDirectory'](arg1, arg2, arg3, arg4, arg5);
+}
+
 export function GetOutputDirectory() {
   return window['go']['main']['App']['GetOutputDirectory']();
 }
@@ -70,12 +74,20 @@ export function GetSchoolsByCluster(arg1) {
   return window['go']['main']['App']['GetSchoolsByCluster'](arg1);
 }
 
+export function GetYearlyBulkOutputDirectory(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['GetYearlyBulkOutputDirectory'](arg1, arg2, arg3, arg4);
+}
+
 export function GetYearlyPayslip(arg1, arg2) {
   return window['go']['main']['App']['GetYearlyPayslip'](arg1, arg2);
 }
 
 export function ImportPayroll(arg1, arg2, arg3) {
   return window['go']['main']['App']['ImportPayroll'](arg1, arg2, arg3);
+}
+
+export function OpenDir(arg1) {
+  return window['go']['main']['App']['OpenDir'](arg1);
 }
 
 export function OpenMonthlyPayslip(arg1, arg2, arg3) {

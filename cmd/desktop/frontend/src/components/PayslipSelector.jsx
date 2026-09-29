@@ -4,10 +4,13 @@ import "./PayslipSelector.css";
 import {
   OpenMonthlyPayslip,
   OpenYearlyPayslip,
+  OpenDir,
   GenerateMonthlyPayslip,
   GenerateYearlyPayslip,
   GenerateMonthlyPayslipsForScope,
   GenerateYearlyPayslipsForScope,
+  GetMonthlyBulkOutputDirectory,
+  GetYearlyBulkOutputDirectory,
 } from "../../wailsjs/go/main/App";
 
 function PayslipSelector({
@@ -31,6 +34,9 @@ function PayslipSelector({
   const [status, setStatus] = useState("idle");
   const [feedback, setFeedback] = useState("");
 
+  const [generated, setGenerated] = useState(false);
+  const [bulkGenerated, setBulkGenerated] = useState(false);
+
   const months = [
     { value: 1, name: "January" },
     { value: 2, name: "February" },
@@ -49,6 +55,8 @@ function PayslipSelector({
   async function handleAction() {
     setStatus("loading");
     setFeedback("");
+    setGenerated(false);
+    setBulkGenerated(false);
 
     try {
       // --------------------------------
@@ -106,6 +114,7 @@ function PayslipSelector({
           );
         }
 
+        setBulkGenerated(true);
         setStatus("success");
         return;
       }
@@ -134,9 +143,74 @@ function PayslipSelector({
         setFeedback("Yearly payslip generated successfully");
       }
 
+      setGenerated(true);
       setStatus("success");
     } catch (error) {
       console.error("Payslip action failed:", error);
+
+      setStatus("error");
+      setFeedback(error?.message || String(error));
+    }
+  }
+
+  async function handleViewGeneratedPayslip() {
+    setStatus("loading");
+    setFeedback("");
+
+    try {
+      if (type === "monthly") {
+        await OpenMonthlyPayslip(employee.shalarthId, month, year);
+
+        setFeedback("Payslip opened successfully");
+      } else {
+        const financialYearStart = Number(financialYear.split("-")[0]);
+
+        await OpenYearlyPayslip(employee.shalarthId, financialYearStart);
+
+        setFeedback("Yearly payslip opened successfully");
+      }
+
+      setStatus("success");
+    } catch (error) {
+      console.error("Failed to open generated payslip:", error);
+
+      setStatus("error");
+      setFeedback(error?.message || String(error));
+    }
+  }
+
+  async function handleOpenBulkDirectory() {
+    setStatus("loading");
+    setFeedback("");
+
+    try {
+      let directory;
+
+      if (type === "monthly") {
+        directory = await GetMonthlyBulkOutputDirectory(
+          scope,
+          cluster,
+          udise,
+          month,
+          year,
+        );
+      } else {
+        const financialYearStart = Number(financialYear.split("-")[0]);
+
+        directory = await GetYearlyBulkOutputDirectory(
+          scope,
+          cluster,
+          udise,
+          financialYearStart,
+        );
+      }
+
+      await OpenDir(directory);
+
+      setStatus("success");
+      setFeedback("Output folder opened successfully");
+    } catch (error) {
+      console.error("Failed to open output directory:", error);
 
       setStatus("error");
       setFeedback(error?.message || String(error));
@@ -162,14 +236,26 @@ function PayslipSelector({
       <div className="payslip-type">
         <button
           className={type === "monthly" ? "active" : ""}
-          onClick={() => setType("monthly")}
+          onClick={() => {
+            setType("monthly");
+            setGenerated(false);
+            setBulkGenerated(false);
+            setStatus("idle");
+            setFeedback("");
+          }}
         >
           Monthly
         </button>
 
         <button
           className={type === "yearly" ? "active" : ""}
-          onClick={() => setType("yearly")}
+          onClick={() => {
+            setType("yearly");
+            setGenerated(false);
+            setBulkGenerated(false);
+            setStatus("idle");
+            setFeedback("");
+          }}
         >
           Yearly
         </button>
@@ -237,6 +323,26 @@ function PayslipSelector({
 
       {status !== "idle" && (
         <div className={`payslip-feedback ${status}`}>{feedback}</div>
+      )}
+
+      {generated && !isViewMode && !isBulkMode && (
+        <button
+          className="payslip-view"
+          onClick={handleViewGeneratedPayslip}
+          disabled={status === "loading"}
+        >
+          View Payslip
+        </button>
+      )}
+
+      {bulkGenerated && isBulkMode && (
+        <button
+          className="payslip-view"
+          onClick={handleOpenBulkDirectory}
+          disabled={status === "loading"}
+        >
+          Open Folder
+        </button>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,10 +9,13 @@ import (
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 )
 
-func CollectMissingPDFJobs(root string) ([]concurrency.ConversionJob, error) {
+func CollectMissingPDFJobs(
+	xlsxRoot string,
+	outputRoot string,
+) ([]concurrency.ConversionJob, error) {
 	var jobs []concurrency.ConversionJob
 
-	err := filepath.WalkDir(root, func(
+	err := filepath.WalkDir(xlsxRoot, func(
 		path string,
 		entry os.DirEntry,
 		walkErr error,
@@ -28,10 +32,28 @@ func CollectMissingPDFJobs(root string) ([]concurrency.ConversionJob, error) {
 			return nil
 		}
 
-		pdfPath := filepath.Join(
-			filepath.Dir(path),
+		// Find the XLSX path relative to the cache root.
+		relativePath, err := filepath.Rel(xlsxRoot, path)
+		if err != nil {
+			return fmt.Errorf(
+				"getting relative XLSX path: %w",
+				err,
+			)
+		}
+
+		// Build the corresponding output directory.
+		outputDir := filepath.Join(
+			outputRoot,
+			filepath.Dir(relativePath),
 			"PDF",
-			strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))+".pdf",
+		)
+
+		pdfPath := filepath.Join(
+			outputDir,
+			strings.TrimSuffix(
+				entry.Name(),
+				filepath.Ext(entry.Name()),
+			)+".pdf",
 		)
 
 		if _, err := os.Stat(pdfPath); err == nil {
@@ -42,7 +64,7 @@ func CollectMissingPDFJobs(root string) ([]concurrency.ConversionJob, error) {
 
 		jobs = append(jobs, concurrency.ConversionJob{
 			Filepath: path,
-			OutDir:   filepath.Join(filepath.Dir(path), "PDF"),
+			OutDir:   outputDir,
 		})
 
 		return nil

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+
 	"path/filepath"
 	"strings"
 	"time"
@@ -132,20 +133,19 @@ func (a *App) GetSchoolsByCluster(
 }
 
 func (a *App) monthlyScopeRoot(
+	baseDir string,
 	scope string,
 	cluster string,
 	udise string,
 	month int,
 	year int,
 ) (string, error) {
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return "", fmt.Errorf("output directory is not configured")
+	if baseDir == "" {
+		return "", fmt.Errorf("base directory is not configured")
 	}
 
 	root := filepath.Join(
-		outputDir,
+		baseDir,
 		fmt.Sprintf("%s_%d", time.Month(month), year),
 	)
 
@@ -174,7 +174,7 @@ func (a *App) monthlyScopeRoot(
 		}
 
 		pdfPath := genexcel.MonthlyPayslipPDFPath(
-			outputDir,
+			baseDir,
 			payslip,
 		)
 
@@ -210,7 +210,7 @@ func (a *App) monthlyScopeRoot(
 			}
 
 			pdfPath := genexcel.MonthlyPayslipPDFPath(
-				outputDir,
+				baseDir,
 				payslip,
 			)
 
@@ -392,8 +392,18 @@ func (a *App) GenerateMonthlyPayslips(
 		return err
 	}
 
+	if a.config.OutputDir == "" {
+		return fmt.Errorf("output directory is not configured")
+	}
+
+	monthlyOutputRoot := filepath.Join(
+		a.config.OutputDir,
+		fmt.Sprintf("%s_%d", time.Month(month), year),
+	)
+
 	conversionJobs, err := generator.CollectMissingPDFJobs(
 		monthlyRoot,
+		monthlyOutputRoot,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -445,8 +455,22 @@ func (a *App) GenerateYearlyPayslips(
 		return err
 	}
 
+	if a.config.OutputDir == "" {
+		return fmt.Errorf("output directory is not configured")
+	}
+
+	yearlyOutputRoot := filepath.Join(
+		a.config.OutputDir,
+		fmt.Sprintf(
+			"Financial_Year_%d_%d",
+			financialYearStart,
+			financialYearStart+1,
+		),
+	)
+
 	conversionJobs, err := generator.CollectMissingPDFJobs(
 		yearlyRoot,
+		yearlyOutputRoot,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -663,12 +687,6 @@ func (a *App) EnsureMonthlyXLSX(
 	year int,
 ) (string, error) {
 
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return "", fmt.Errorf("output directory is not configured")
-	}
-
 	payslips, err := database.GetPayslips(
 		a.db,
 		month,
@@ -682,8 +700,10 @@ func (a *App) EnsureMonthlyXLSX(
 		return "", fmt.Errorf("no payslips found")
 	}
 
+	cacheDir := a.paths.CacheDir
+
 	monthlyRoot := filepath.Join(
-		outputDir,
+		cacheDir,
 		fmt.Sprintf("%s_%d", time.Month(month), year),
 	)
 
@@ -698,11 +718,14 @@ func (a *App) EnsureMonthlyXLSX(
 		return "", fmt.Errorf("checking monthly XLSX cache: %w", err)
 	}
 
-	monthlyTemplate := filepath.Join(a.paths.ResourcesDir, "monthly_template.xlsx")
+	monthlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"monthly_template.xlsx",
+	)
 
 	if err := genexcel.GenerateMonthlyPayslips(
 		monthlyTemplate,
-		outputDir,
+		cacheDir,
 		payslips,
 	); err != nil {
 		return "", fmt.Errorf(
@@ -729,14 +752,10 @@ func (a *App) EnsureYearlyXLSX(
 	financialYearStart int,
 ) (string, error) {
 
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return "", fmt.Errorf("output directory is not configured")
-	}
+	cacheDir := a.paths.CacheDir
 
 	yearlyRoot := filepath.Join(
-		outputDir,
+		cacheDir,
 		fmt.Sprintf(
 			"Financial_Year_%d_%d",
 			financialYearStart,
@@ -755,12 +774,15 @@ func (a *App) EnsureYearlyXLSX(
 		return "", fmt.Errorf("checking yearly XLSX cache: %w", err)
 	}
 
-	yearlyTemplate := filepath.Join(a.paths.ResourcesDir, "yearly_template.xlsx")
+	yearlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"yearly_template.xlsx",
+	)
 
 	if err := generator.ExportYearlyEmployeePayslips(
 		a.db,
 		yearlyTemplate,
-		outputDir,
+		cacheDir,
 		financialYearStart,
 	); err != nil {
 		return "", fmt.Errorf(
@@ -797,6 +819,19 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 
 	// Pick the directory based on the requested scope.
 	root, err := a.monthlyScopeRoot(
+		a.paths.CacheDir,
+		scope,
+		cluster,
+		udise,
+		month,
+		year,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	outputRoot, err := a.monthlyScopeRoot(
+		a.config.OutputDir,
 		scope,
 		cluster,
 		udise,
@@ -808,11 +843,13 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 	}
 
 	// Convert only PDFs that don't exist yet.
-	jobs, err := generator.CollectMissingPDFJobs(root)
+	jobs, err := generator.CollectMissingPDFJobs(
+		root,
+		outputRoot,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("collecting PDF jobs: %w", err)
 	}
-
 	if len(jobs) == 0 {
 		return 0, nil
 	}
@@ -844,19 +881,18 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 }
 
 func (a *App) yearlyScopeRoot(
+	baseDir string,
 	scope string,
 	cluster string,
 	udise string,
 	financialYearStart int,
 ) (string, error) {
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return "", fmt.Errorf("output directory is not configured")
+	if baseDir == "" {
+		return "", fmt.Errorf("base directory is not configured")
 	}
 
 	root := filepath.Join(
-		outputDir,
+		baseDir,
 		fmt.Sprintf(
 			"Financial_Year_%d_%d",
 			financialYearStart,
@@ -888,7 +924,7 @@ func (a *App) yearlyScopeRoot(
 		}
 
 		pdfPath := genexcel.YearlyPayslipPDFPath(
-			outputDir,
+			baseDir,
 			yearly,
 			financialYearStart,
 		)
@@ -924,7 +960,7 @@ func (a *App) yearlyScopeRoot(
 			}
 
 			pdfPath := genexcel.YearlyPayslipPDFPath(
-				outputDir,
+				baseDir,
 				yearly,
 				financialYearStart,
 			)
@@ -954,6 +990,7 @@ func (a *App) GenerateYearlyPayslipsForScope(
 	}
 
 	root, err := a.yearlyScopeRoot(
+		a.paths.CacheDir,
 		scope,
 		cluster,
 		udise,
@@ -963,11 +1000,27 @@ func (a *App) GenerateYearlyPayslipsForScope(
 		return 0, err
 	}
 
-	jobs, err := generator.CollectMissingPDFJobs(root)
+	outputRoot, err := a.yearlyScopeRoot(
+		a.config.OutputDir,
+		scope,
+		cluster,
+		udise,
+		financialYearStart,
+	)
 	if err != nil {
-		return 0, fmt.Errorf("collecting PDF jobs: %w", err)
+		return 0, err
 	}
 
+	jobs, err := generator.CollectMissingPDFJobs(
+		root,
+		outputRoot,
+	)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"collecting PDF jobs: %w",
+			err,
+		)
+	}
 	if len(jobs) == 0 {
 		return 0, nil
 	}
@@ -1045,10 +1098,12 @@ func (a *App) ImportPayroll(
 				fmt.Errorf("copying payroll file: %w", err)
 		}
 	}
+
 	clusterPath := filepath.Join(
 		a.paths.ResourcesDir,
 		"clusters.xlsx",
 	)
+
 	report, _, _, err := importer.ImportPayroll(
 		clusterPath,
 		destination,
@@ -1056,9 +1111,21 @@ func (a *App) ImportPayroll(
 		month,
 		year,
 	)
-
 	if err != nil {
 		return report, err
+	}
+
+	// Invalidate cached XLSX files for the imported month.
+	monthlyCacheRoot := filepath.Join(
+		a.paths.CacheDir,
+		fmt.Sprintf("%s_%d", time.Month(month), year),
+	)
+
+	if err := os.RemoveAll(monthlyCacheRoot); err != nil {
+		return report, fmt.Errorf(
+			"invalidating monthly XLSX cache: %w",
+			err,
+		)
 	}
 
 	return report, nil
@@ -1074,4 +1141,57 @@ func (a *App) SelectPayrollFile() (string, error) {
 			},
 		},
 	})
+}
+
+func (a *App) OpenDir(path string) error {
+	var cmd *exec.Cmd
+
+	switch goRuntime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", path)
+	case "windows":
+		cmd = exec.Command("explorer.exe", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default:
+		return fmt.Errorf("unsupported operating system: %s", goRuntime.GOOS)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("opening directory: %w", err)
+	}
+
+	return nil
+}
+
+func (a *App) GetMonthlyBulkOutputDirectory(
+	scope string,
+	cluster string,
+	udise string,
+	month int,
+	year int,
+) (string, error) {
+	return a.monthlyScopeRoot(
+		a.config.OutputDir,
+		scope,
+		cluster,
+		udise,
+		month,
+		year,
+	)
+}
+
+func (a *App) GetYearlyBulkOutputDirectory(
+	scope string,
+	cluster string,
+	udise string,
+	financialYearStart int,
+) (string, error) {
+	return a.yearlyScopeRoot(
+		a.config.OutputDir,
+		scope,
+		cluster,
+		udise,
+		financialYearStart,
+	)
 }
