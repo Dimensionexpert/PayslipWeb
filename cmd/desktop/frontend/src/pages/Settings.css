@@ -91,3 +91,13 @@
     background: #fff7f7;
     color: #9b3d3d;
 }
+
+.settings-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.settings-actions .settings-action {
+    margin-top: 0;
+}
