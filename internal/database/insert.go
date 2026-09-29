@@ -93,7 +93,12 @@ func InsertSchools(db *sql.DB, schools map[string]models.School) error {
 	for _, school := range schools {
 		clusterID, err := getClusterID(db, school.Cluster)
 		if err != nil {
-			return err
+			return fmt.Errorf(
+				"finding cluster %q for school %q: %w",
+				school.Cluster,
+				school.UDISECode,
+				err,
+			)
 		}
 
 		_, err = db.Exec(`

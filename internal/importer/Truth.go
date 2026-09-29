@@ -2,6 +2,7 @@ package importer
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Dimensionexpert/payslip/internal/excel"
 	"github.com/Dimensionexpert/payslip/internal/models"
@@ -40,10 +41,10 @@ func ImportTruth(
 		schoolName := excel.Get(row, headerMap, "NAME OF SCHOOL")
 
 		// Ignore completely empty rows.
-		if udiseCode == "" && schoolName == "" {
+		if strings.TrimSpace(udiseCode) == "" &&
+			strings.TrimSpace(schoolName) == "" {
 			continue
 		}
-
 		// Check whether the UDISE exists in the cluster mapping.
 		clusterName, ok := clusterMap[udiseCode]
 
