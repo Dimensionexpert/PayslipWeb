@@ -1,4 +1,6 @@
 .bulk-generate {
+    display: flex;
+    flex-direction: column;
     width: min(100% - 64px, 900px);
     min-height: 100vh;
     margin: 0 auto;
@@ -6,18 +8,20 @@
 }
 
 .bulk-header {
-    margin: 32px 0 40px;
+    margin: 0 0 32px;
 }
 
 .bulk-header h1 {
     margin: 0;
     font-size: 30px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.04em;
 }
 
 .bulk-header p {
     margin: 6px 0 0;
     color: #697386;
+    font-size: 15px;
 }
 
 .bulk-section {
@@ -39,12 +43,17 @@
 .bulk-option {
     width: 100%;
     padding: 16px 18px;
-    border: 1px solid #e1e5eb;
-    border-radius: 10px;
-    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(249, 251, 255, 0.96)
+    );
     color: #172033;
     text-align: left;
     cursor: pointer;
+    box-shadow: 0 8px 16px rgba(31, 42, 55, 0.03);
 }
 
 .bulk-option strong {
@@ -61,7 +70,8 @@
 }
 
 .bulk-option.selected {
-    border-color: #172033;
+    border-color: rgba(47, 110, 244, 0.45);
+    box-shadow: 0 10px 24px rgba(47, 110, 244, 0.12);
 }
 
 .bulk-picker {

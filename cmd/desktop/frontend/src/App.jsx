@@ -9,22 +9,22 @@ import "./App.css";
 function App() {
   const [page, setPage] = useState("home");
 
-  if (page === "view") {
-    return <ViewPayslips mode="view" onHome={() => setPage("home")} />;
-  }
+  const renderPage = () => {
+    switch (page) {
+      case "view":
+        return <ViewPayslips mode="view" onHome={() => setPage("home")} />;
+      case "generate":
+        return <BulkGenerate onHome={() => setPage("home")} />;
+      case "import":
+        return <ImportPayroll onHome={() => setPage("home")} />;
+      case "settings":
+        return <Settings onHome={() => setPage("home")} />;
+      default:
+        return <Home onNavigate={setPage} />;
+    }
+  };
 
-  if (page === "generate") {
-    return <BulkGenerate onHome={() => setPage("home")} />;
-  }
-  if (page === "import") {
-    return <ImportPayroll onHome={() => setPage("home")} />;
-  }
-
-  if (page === "settings") {
-    return <Settings onHome={() => setPage("home")} />;
-  }
-
-  return <Home onNavigate={setPage} />;
+  return <div className="app">{renderPage()}</div>;
 }
 
 export default App;

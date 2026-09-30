@@ -6,50 +6,66 @@ function Home({ onNavigate }) {
       <header className="home-header">
         <div className="home-brand">
           <h1>Payslip</h1>
-          <p>Payroll made simple.</p>
+          <p>Keep payroll workflows clear, fast, and consistent.</p>
         </div>
       </header>
 
-      <section className="home-menu">
-        <button className="home-card" onClick={() => onNavigate("view")}>
+      <section className="home-menu" aria-label="Main menu">
+        <button
+          className="home-card"
+          data-tone="blue"
+          onClick={() => onNavigate("view")}
+        >
           <div className="home-card-icon">⌕</div>
 
           <div>
             <strong>View Payslips</strong>
-            <span>Find and view employee payslips.</span>
+            <span>Find and review employee payslips.</span>
           </div>
 
           <span className="home-card-arrow">→</span>
         </button>
 
-        <button className="home-card" onClick={() => onNavigate("generate")}>
+        <button
+          className="home-card"
+          data-tone="teal"
+          onClick={() => onNavigate("generate")}
+        >
           <div className="home-card-icon">＋</div>
 
           <div>
             <strong>Generate Payslips</strong>
-            <span>Generate monthly or yearly payslips.</span>
+            <span>Generate monthly or yearly payroll batches.</span>
           </div>
 
           <span className="home-card-arrow">→</span>
         </button>
 
-        <button className="home-card" onClick={() => onNavigate("import")}>
+        <button
+          className="home-card"
+          data-tone="violet"
+          onClick={() => onNavigate("import")}
+        >
           <div className="home-card-icon">⇩</div>
 
           <div>
             <strong>Import Payroll</strong>
-            <span>Import a monthly payroll Excel file.</span>
+            <span>Import payroll data from Excel files.</span>
           </div>
 
           <span className="home-card-arrow">→</span>
         </button>
 
-        <button className="home-card" onClick={() => onNavigate("settings")}>
+        <button
+          className="home-card"
+          data-tone="amber"
+          onClick={() => onNavigate("settings")}
+        >
           <div className="home-card-icon">⚙</div>
 
           <div>
             <strong>Settings</strong>
-            <span>Manage application settings.</span>
+            <span>Manage app configuration and paths.</span>
           </div>
 
           <span className="home-card-arrow">→</span>

@@ -1,3 +1,174 @@
+.view-payslips {
+    display: flex;
+    flex-direction: column;
+    width: min(100% - 64px, 900px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 48px 0 64px;
+}
+
+.view-payslips header h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.view-payslips header p {
+    margin: 6px 0 28px;
+    color: #697386;
+    font-size: 15px;
+}
+
+.view-payslips section {
+    margin-top: 36px;
+}
+
+.view-payslips h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #697386;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.search-box {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    border: 1px solid #e1e5eb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02);
+}
+
+.search-box span {
+    color: #697386;
+    font-size: 22px;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #172033;
+    font: inherit;
+}
+
+.search-box input::placeholder {
+    color: #9aa3b2;
+}
+
+.search-box input:focus {
+    outline: none;
+}
+
+.cluster-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cluster-card {
+    width: 100%;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(249, 251, 255, 0.96)
+    );
+    color: #172033;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 8px 16px rgba(31, 42, 55, 0.03);
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        transform 150ms ease;
+}
+
+.cluster-card:hover {
+    border-color: rgba(47, 110, 244, 0.35);
+    box-shadow: 0 12px 22px rgba(23, 32, 51, 0.06);
+    transform: translateY(-1px);
+}
+
+.cluster-card div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cluster-card strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.cluster-card span {
+    color: #697386;
+    font-size: 13px;
+}
+
+.cluster-arrow {
+    color: #8b94a3;
+    font-size: 20px;
+}
+
+.payslip-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 0 0 18px 0;
+    margin-left: auto;
+    padding: 8px 12px;
+    border: 1px solid #dfe7f4;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    color: #5d6983;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 8px 16px rgba(16, 24, 40, 0.04);
+}
+
+.payslip-back:hover {
+    color: #172033;
+    border-color: rgba(47, 110, 244, 0.3);
+    background: #ffffff;
+}
+
+.view-state {
+    display: grid;
+    gap: 8px;
+    padding: 28px 24px;
+    border: 1px solid #e1e5eb;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.view-state h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #172033;
+}
+
+.view-state p {
+    margin: 0;
+    color: #697386;
+}
+
 .employee-card {
     width: 100%;
     border: 1px solid #e1e5eb;
@@ -72,4 +243,11 @@
 .employee-actions button:hover {
     background: #25304a;
     border-color: #25304a;
+}
+
+@media (max-width: 700px) {
+    .view-payslips {
+        width: min(100% - 20px, 900px);
+        padding-top: 28px;
+    }
 }

@@ -1,4 +1,6 @@
 .import-payroll {
+    display: flex;
+    flex-direction: column;
     width: min(100% - 64px, 900px);
     min-height: 100vh;
     margin: 0 auto;
@@ -6,13 +8,14 @@
 }
 
 .import-header {
-    margin: 32px 0 40px;
+    margin: 0 0 32px;
 }
 
 .import-header h1 {
     margin: 0;
     font-size: 30px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.04em;
     color: #172033;
 }
 
@@ -33,12 +36,17 @@
     width: fit-content;
     padding: 11px 16px;
     border: 1px solid #dce1e8;
-    border-radius: 8px;
-    background: #ffffff;
+    border-radius: 10px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(248, 250, 255, 0.96)
+    );
     color: #172033;
     font: inherit;
     font-size: 14px;
     cursor: pointer;
+    box-shadow: 0 8px 16px rgba(31, 42, 55, 0.03);
 }
 
 .import-file button:hover {

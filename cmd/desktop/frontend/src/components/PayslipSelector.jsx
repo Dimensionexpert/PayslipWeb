@@ -305,44 +305,46 @@ function PayslipSelector({
         </div>
       )}
 
-      <button
-        className="payslip-action"
-        onClick={handleAction}
-        disabled={status === "loading"}
-      >
-        {status === "loading"
-          ? isViewMode
-            ? "Opening..."
-            : "Generating..."
-          : isViewMode
-            ? "View Payslip"
-            : isBulkMode
-              ? "Generate Payslips"
-              : "Generate Payslip"}
-      </button>
+      <div className="payslip-action-row">
+        <button
+          className="payslip-action"
+          onClick={handleAction}
+          disabled={status === "loading"}
+        >
+          {status === "loading"
+            ? isViewMode
+              ? "Opening..."
+              : "Generating..."
+            : isViewMode
+              ? "View Payslip"
+              : isBulkMode
+                ? "Generate Payslips"
+                : "Generate Payslip"}
+        </button>
+
+        {generated && !isViewMode && !isBulkMode && (
+          <button
+            className="payslip-view"
+            onClick={handleViewGeneratedPayslip}
+            disabled={status === "loading"}
+          >
+            View Payslip
+          </button>
+        )}
+
+        {bulkGenerated && isBulkMode && (
+          <button
+            className="payslip-view"
+            onClick={handleOpenBulkDirectory}
+            disabled={status === "loading"}
+          >
+            Open Folder
+          </button>
+        )}
+      </div>
 
       {status !== "idle" && (
         <div className={`payslip-feedback ${status}`}>{feedback}</div>
-      )}
-
-      {generated && !isViewMode && !isBulkMode && (
-        <button
-          className="payslip-view"
-          onClick={handleViewGeneratedPayslip}
-          disabled={status === "loading"}
-        >
-          View Payslip
-        </button>
-      )}
-
-      {bulkGenerated && isBulkMode && (
-        <button
-          className="payslip-view"
-          onClick={handleOpenBulkDirectory}
-          disabled={status === "loading"}
-        >
-          Open Folder
-        </button>
       )}
     </div>
   );

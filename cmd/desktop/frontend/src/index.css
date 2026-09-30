@@ -1,7 +1,22 @@
 :root {
-    font-family: "Nunito", system-ui, sans-serif;
-    color: #172033;
-    background: #f6f7f9;
+    --bg: #f5f7fb;
+    --bg-strong: #edf2fa;
+    --panel: #ffffff;
+    --panel-alt: #f8f9fc;
+    --primary: #2f6ef4;
+    --primary-deep: #1d3d82;
+    --primary-soft: #edf4ff;
+    --text: #171d2d;
+    --muted: #5f6f88;
+    --border: #dde5f0;
+    --success: #1a8d62;
+    --shadow: 0 20px 42px rgba(24, 36, 58, 0.1);
+    --shadow-soft: 0 10px 24px rgba(24, 36, 58, 0.06);
+
+    font-family: "Nunito", "Segoe UI", sans-serif;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -11,12 +26,39 @@
     box-sizing: border-box;
 }
 
+html {
+    background: var(--bg);
+}
+
 body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(47, 110, 244, 0.12),
+            transparent 24%
+        ),
+        radial-gradient(
+            circle at top right,
+            rgba(84, 112, 255, 0.08),
+            transparent 22%
+        ),
+        linear-gradient(180deg, #f9fbff 0%, #f3f6fd 100%);
+    color: var(--text);
+}
+
+button,
+input,
+select {
+    font: inherit;
 }
 
 button {
-    font: inherit;
+    transition: all 160ms ease;
+}
+
+#root {
+    min-height: 100vh;
 }

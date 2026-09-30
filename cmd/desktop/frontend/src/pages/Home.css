@@ -1,23 +1,36 @@
 .home {
-    width: min(100% - 64px, 900px);
+    width: min(100% - 32px, 980px);
     min-height: 100vh;
     margin: 0 auto;
-    padding: 48px 0 64px;
+    padding: 46px 0 64px;
 }
 
 .home-header {
-    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.home-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .home-brand h1 {
     margin: 0;
-    font-size: 30px;
-    font-weight: 600;
+    font-size: clamp(2.2rem, 3.5vw, 2.9rem);
+    line-height: 1.06;
+    letter-spacing: -0.06em;
+    font-weight: 800;
 }
 
 .home-brand p {
-    margin: 6px 0 0;
-    color: #697386;
+    margin: 0;
+    max-width: 560px;
+    color: var(--muted);
+    font-size: 1rem;
 }
 
 .home-menu {
@@ -28,59 +41,125 @@
 
 .home-card {
     width: 100%;
-    min-height: 92px;
+    min-height: 94px;
     display: grid;
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 48px 1fr auto;
     align-items: center;
-    gap: 16px;
-    padding: 18px 20px;
-    border: 1px solid #e1e5eb;
-    border-radius: 12px;
-    background: #ffffff;
-    color: #172033;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 1px solid rgba(221, 229, 240, 0.9);
+    border-radius: 16px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(249, 251, 255, 0.96)
+    );
+    color: var(--text);
     text-align: left;
     cursor: pointer;
+    box-shadow: 0 8px 18px rgba(31, 42, 55, 0.04);
     transition:
-        border-color 150ms ease,
-        box-shadow 150ms ease,
-        background 150ms ease;
+        transform 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        background 160ms ease;
 }
 
 .home-card:hover {
-    border-color: #c8ced8;
-    background: #ffffff;
-    box-shadow: 0 4px 16px rgba(23, 32, 51, 0.05);
+    transform: translateY(-1px);
+    border-color: rgba(47, 110, 244, 0.35);
+    box-shadow: 0 12px 24px rgba(31, 42, 55, 0.08);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 1),
+        rgba(247, 250, 255, 1)
+    );
 }
 
 .home-card-icon {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e1e5eb;
-    border-radius: 10px;
-    color: #172033;
-    font-size: 20px;
+    border-radius: 12px;
+    font-size: 1.35rem;
+    font-weight: 700;
+    background: linear-gradient(
+        135deg,
+        rgba(47, 110, 244, 0.16),
+        rgba(30, 79, 183, 0.12)
+    );
+    color: var(--primary-deep);
+    border: 1px solid rgba(47, 110, 244, 0.12);
+}
+
+.home-card[data-tone="blue"] .home-card-icon {
+    background: linear-gradient(
+        135deg,
+        rgba(47, 110, 244, 0.16),
+        rgba(47, 110, 244, 0.08)
+    );
+}
+
+.home-card[data-tone="teal"] .home-card-icon {
+    background: linear-gradient(
+        135deg,
+        rgba(26, 141, 99, 0.16),
+        rgba(26, 141, 99, 0.08)
+    );
+    color: #126c4f;
+}
+
+.home-card[data-tone="violet"] .home-card-icon {
+    background: linear-gradient(
+        135deg,
+        rgba(116, 92, 255, 0.14),
+        rgba(116, 92, 255, 0.08)
+    );
+    color: #4c43d1;
+}
+
+.home-card[data-tone="amber"] .home-card-icon {
+    background: linear-gradient(
+        135deg,
+        rgba(218, 153, 41, 0.16),
+        rgba(218, 153, 41, 0.1)
+    );
+    color: #8d5b03;
 }
 
 .home-card div:nth-child(2) {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .home-card strong {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
 }
 
 .home-card span {
-    color: #697386;
-    font-size: 13px;
+    color: var(--muted);
+    font-size: 0.87rem;
 }
 
 .home-card-arrow {
-    color: #8b94a3;
-    font-size: 20px;
+    color: var(--muted);
+    font-size: 1.45rem;
+    font-weight: 700;
+}
+
+@media (max-width: 700px) {
+    .home {
+        width: min(100% - 20px, 980px);
+        padding-top: 28px;
+    }
+
+    .home-card {
+        grid-template-columns: 46px 1fr auto;
+        padding: 16px 16px;
+    }
 }

@@ -1,4 +1,6 @@
 .settings {
+    display: flex;
+    flex-direction: column;
     width: min(100% - 64px, 900px);
     min-height: 100vh;
     margin: 0 auto;
@@ -6,13 +8,14 @@
 }
 
 .settings-header {
-    margin: 32px 0 40px;
+    margin: 0 0 32px;
 }
 
 .settings-header h1 {
     margin: 0;
     font-size: 30px;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: -0.04em;
     color: #172033;
 }
 
@@ -55,19 +58,26 @@
 .settings-action {
     margin-top: 14px;
     padding: 11px 16px;
-    border: 1px solid #dfe4eb;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #172033;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1f2a37 0%, #2a3748 100%);
+    color: #f8fafc;
     font: inherit;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
+    box-shadow: 0 12px 20px rgba(19, 27, 39, 0.18);
+    transition:
+        transform 140ms ease,
+        box-shadow 140ms ease,
+        filter 140ms ease,
+        opacity 140ms ease;
 }
 
 .settings-action:hover {
-    background: #f8f9fb;
-    border-color: #172033;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px rgba(19, 27, 39, 0.22);
+    filter: brightness(1.03);
 }
 
 .settings-action:disabled {
