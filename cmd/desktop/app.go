@@ -17,6 +17,7 @@ import (
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/config"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
+	osutil "github.com/Dimensionexpert/payslip/cmd/desktop/internal/osutils"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/paths"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/resources"
@@ -1145,24 +1146,7 @@ func (a *App) SelectPayrollFile() (string, error) {
 }
 
 func (a *App) OpenDir(path string) error {
-	var cmd *exec.Cmd
-
-	switch goRuntime.GOOS {
-	case "linux":
-		cmd = exec.Command("xdg-open", path)
-	case "windows":
-		cmd = exec.Command("explorer.exe", path)
-	case "darwin":
-		cmd = exec.Command("open", path)
-	default:
-		return fmt.Errorf("unsupported operating system: %s", goRuntime.GOOS)
-	}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("opening directory: %w", err)
-	}
-
-	return nil
+	return osutil.OpenDir(path)
 }
 
 func (a *App) GetMonthlyBulkOutputDirectory(
