@@ -1,6 +1,8 @@
 package genexcel
 
-import "strings"
+import (
+	"strings"
+)
 
 var ones = []string{
 	"",
@@ -104,5 +106,7 @@ func AmountInWords(amount float64) string {
 		parts = append(parts, threeDigitWords(int(hundred)))
 	}
 
-	return "Rupees " + strings.Join(parts, " ") + " Only"
+	amountInWords := "Rupees " + strings.Join(parts, " ") + " Only"
+
+	return strings.ToUpper(amountInWords)
 }

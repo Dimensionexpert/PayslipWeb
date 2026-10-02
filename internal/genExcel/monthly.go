@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/xuri/excelize/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/Dimensionexpert/payslip/internal/models"
 )
@@ -28,92 +30,98 @@ func GenerateMonthlyPayslip(
 	}
 	defer f.Close()
 
-	const sheet = "Sheet1"
+	const sheet = "Monthly"
 
 	school := data.School
 	employee := data.Employee
 	payslip := data.Payslip
 
 	// --------------------------------------------------
-	// Employee / School information
+	// Employee information
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "C8", employee.Name)
-	f.SetCellValue(sheet, "H8", employee.ID)
+	f.SetCellValue(
+		sheet,
+		"A3",
+		fmt.Sprintf(
+			"CLUSTER : %s   |   TAL : %s   |   DIST : %s",
+			data.Cluster.Name,
+			data.School.Block,
+			"Pune",
+		),
+	)
 
-	f.SetCellValue(sheet, "C9", employee.Designation)
-	f.SetCellValue(sheet, "H9", school.UDISECode)
+	// --------------------------------------------------
+	// Employee information
+	// --------------------------------------------------
+	caser := cases.Title(language.English)
+	employeeName := caser.String(employee.Name)
+	f.SetCellValue(sheet, "C8", employeeName)
+	f.SetCellValue(sheet, "C9", school.Name)
+	f.SetCellValue(sheet, "C10", employee.Designation)
+	f.SetCellValue(sheet, "C11", employee.GPFNo)
+	f.SetCellValue(sheet, "C12", fmt.Sprintf(
+		"%s %d",
+		time.Month(payslip.Month).String(),
+		payslip.Year,
+	))
 
-	f.SetCellValue(sheet, "C10", school.Name)
-	f.SetCellValue(sheet, "H10", employee.PAN)
+	f.SetCellValue(sheet, "F10", employee.ShalarthID)
+	f.SetCellValue(sheet, "F11", school.UDISECode)
+	f.SetCellValue(sheet, "F12", employee.PAN)
 
-	// Employee can be either GPF or DCPS.
+	// Employee can have either GPF or DCPS.
 	retirementNo := employee.GPFNo
 	if retirementNo == "" {
 		retirementNo = employee.DCPSNo
 	}
 
 	f.SetCellValue(sheet, "C11", retirementNo)
-	f.SetCellValue(sheet, "C12", employee.ShalarthID)
-
-	// --------------------------------------------------
-	// Payroll period
-	// --------------------------------------------------
-
-	monthName := time.Month(payslip.Month).String()
-
-	f.SetCellValue(
-		sheet,
-		"D14",
-		fmt.Sprintf("%s %d", monthName, payslip.Year),
-	)
 
 	// --------------------------------------------------
 	// Earnings
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "D17", payslip.BasicPay)
-	f.SetCellValue(sheet, "D18", payslip.DA)
-	f.SetCellValue(sheet, "D19", payslip.HRA)
-	f.SetCellValue(sheet, "D20", payslip.TA)
-	f.SetCellValue(sheet, "D21", payslip.TAArrear)
-	f.SetCellValue(sheet, "D22", payslip.DAArrears)
-	f.SetCellValue(sheet, "D23", payslip.BasicArrears)
-	f.SetCellValue(sheet, "D24", payslip.NPSEmprAllow)
+	f.SetCellValue(sheet, "C15", payslip.BasicPay)
+	f.SetCellValue(sheet, "C16", payslip.DA)
+	f.SetCellValue(sheet, "C17", payslip.HRA)
+	f.SetCellValue(sheet, "C18", payslip.TA)
+	f.SetCellValue(sheet, "C19", payslip.TAArrear)
+	f.SetCellValue(sheet, "C20", payslip.DAArrears)
+	f.SetCellValue(sheet, "C21", payslip.BasicArrears)
+	f.SetCellValue(sheet, "C22", payslip.NPSEmprAllow)
 
 	// --------------------------------------------------
 	// Deductions
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "H17", payslip.FA)
-	f.SetCellValue(sheet, "H18", payslip.GPF)
-	f.SetCellValue(sheet, "H19", payslip.GPFAdvance)
-	f.SetCellValue(sheet, "H20", payslip.PT)
+	f.SetCellValue(sheet, "F15", payslip.GPF)
+	f.SetCellValue(sheet, "F16", payslip.GPFAdvance)
+	f.SetCellValue(sheet, "F17", payslip.PT)
 
 	// GIS is represented by two DB fields,
 	// but the template has a single GIS field.
 	gis := payslip.GISZP + payslip.GISScout
-	f.SetCellValue(sheet, "H21", gis)
+	f.SetCellValue(sheet, "F18", gis)
 
-	f.SetCellValue(sheet, "H22", payslip.RevenueStamp)
-	f.SetCellValue(sheet, "H23", payslip.NPSEmprContri)
-	f.SetCellValue(sheet, "H24", payslip.NPSEmpContri)
-	f.SetCellValue(sheet, "H25", payslip.IncomeTax)
-	f.SetCellValue(sheet, "H26", payslip.NGRSocietyLoan)
-
-	// HOME LOAN was removed from the template.
-	// Therefore H27 is intentionally untouched.
+	f.SetCellValue(sheet, "F19", payslip.RevenueStamp)
+	f.SetCellValue(sheet, "F20", payslip.NPSEmprContri)
+	f.SetCellValue(sheet, "F21", payslip.NPSEmpContri)
+	f.SetCellValue(sheet, "F22", payslip.NPSEmprContriArr)
+	f.SetCellValue(sheet, "F23", payslip.NPSEmpContriArr)
+	f.SetCellValue(sheet, "F24", payslip.IncomeTax)
+	f.SetCellValue(sheet, "F25", payslip.NGRSocietyLoan)
 
 	// --------------------------------------------------
 	// Totals
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "D28", payslip.TotalPay)
+	f.SetCellValue(sheet, "C26", payslip.TotalPay)
 
 	totalDeduction := payslip.TotalGovtDeductions +
 		payslip.NGRTotalDeduction
 
-	f.SetCellValue(sheet, "H28", totalDeduction)
+	f.SetCellValue(sheet, "F26", totalDeduction)
 
 	// --------------------------------------------------
 	// Net salary
@@ -121,33 +129,35 @@ func GenerateMonthlyPayslip(
 
 	f.SetCellValue(
 		sheet,
-		"A31",
+		"A29",
 		fmt.Sprintf("₹ %.0f", payslip.EmployeeNetSalary),
 	)
 
 	f.SetCellValue(
 		sheet,
-		"D31",
+		"E29",
 		AmountInWords(payslip.EmployeeNetSalary),
 	)
 
 	// --------------------------------------------------
-	// Footer
+	// Signature / footer information
 	// --------------------------------------------------
 
-	// A33 ("PLACE") remains untouched because
-	// f.SetCellValue(sheet, "A33", school.Name)
+	f.SetCellValue(sheet, "E36", data.Cluster.Name)
+	f.SetCellValue(sheet, "A32", school.Name)
+	f.SetCellValue(sheet, "B36", school.Name)
 
-	f.SetCellValue(sheet, "A34", school.Name)
 	f.SetCellValue(
 		sheet,
-		"E34",
+		"F32",
 		time.Now().Format("02-Jan-06"),
 	)
 
 	// --------------------------------------------------
 	// Output
 	// --------------------------------------------------
+
+	monthName := time.Month(payslip.Month).String()
 
 	periodDir := filepath.Join(
 		outputDir,

@@ -1,0 +1,198 @@
+App.go Sanitization
+===================
+
+KEEP
+----
+
+1) 33 - 134
+   App struct, lifecycle, initialization, query methods
+   → stays in App
+
+2) 294 - 320
+   ChooseOutputDirectory()
+   → Wails native directory dialog
+   → stays in App
+
+3) 514 - 542
+   SetOutputDirectory()
+   → Wails native directory dialog + config update
+   → stays in App
+
+4) 543 - 546
+   GetOutputDirectory()
+   → config getter
+   → stays in App
+
+5) 681 - 684
+   GetClusters()
+   → query delegate
+   → stays in App
+
+6) 1134 - 1145
+   SelectPayrollFile()
+   → Wails native file dialog
+   → stays in App
+
+
+REFACTOR
+--------
+
+1) 135 - 230
+   monthlyScopeRoot()
+   → monthly generation service
+   → Handles monthly scope/output path resolution and related DB lookup
+
+2) 231 - 293
+   GenerateMonthlyPayslip()
+   → monthly generation service
+   → Individual monthly payslip generation
+
+3) 321 - 381
+   GenerateYearlyPayslip()
+   → yearly generation service
+   → Individual yearly payslip generation
+
+4) 382 - 446
+   GenerateMonthlyPayslips()
+   → monthly generation service
+   → Bulk monthly generation/conversion
+
+5) 447 - 513
+   GenerateYearlyPayslips()
+   → yearly generation service
+   → Bulk yearly generation/conversion
+
+6) 547 - 609
+   OpenMonthlyPayslip()
+   → file-opening / OS utility
+   → Opens generated monthly PDF
+
+7) 610 - 680
+   OpenYearlyPayslip()
+   → file-opening / OS utility
+   → Opens generated yearly PDF
+
+8) 685 - 750
+   EnsureMonthlyXLSX()
+   → monthly generation service
+   → Monthly XLSX cache/check/generation workflow
+
+9) 751 - 807
+   EnsureYearlyXLSX()
+   → yearly generation service
+   → Yearly XLSX cache/check/generation workflow
+
+10) 808 - 882
+    GenerateMonthlyPayslipsForScope()
+    → monthly generation service
+    → Scope-based monthly generation + PDF conversion
+
+11) 883 - 981
+    yearlyScopeRoot()
+    → yearly generation service
+    → Handles yearly scope/output path resolution and related DB lookup
+
+12) 982 - 1053
+    GenerateYearlyPayslipsForScope()
+    → yearly generation service
+    → Scope-based yearly generation + PDF conversion
+
+13) 1054 - 1133
+    ImportPayroll()
+    → payroll import service
+    → Source-file handling, import, and cache invalidation
+
+14) 1146 - 1166
+    OpenDir()
+    → file-opening / OS utility
+    → Cross-platform directory opening
+
+15) 1167 - 1183
+    GetMonthlyBulkOutputDirectory()
+    → monthly generation service
+    → Delegates to monthlyScopeRoot()
+
+16) 1184 - 1200
+    GetYearlyBulkOutputDirectory()
+    → yearly generation service
+    → Delegates to yearlyScopeRoot()
+
+
+ADDITIONAL REVIEW NOTES
+-----------------------
+
+1) shutdown()
+   → KEEP
+   → App lifecycle responsibility.
+   → Current signature cannot return an error, so logging the DB close
+     error is appropriate.
+   → Minor cleanup later: prefer log.Printf(...) over fmt.Println(...).
+
+2) OpenMonthlyPayslip(), OpenYearlyPayslip(), OpenDir()
+   → Likely share one underlying OS-opening helper during refactor.
+   → Linux: xdg-open
+   → Windows: explorer.exe
+   → macOS: open
+
+3) monthlyScopeRoot() / yearlyScopeRoot()
+   → These are not generic path helpers.
+   → They combine scope resolution, DB lookup, and output-path construction.
+   → Keep them with their respective generation workflows.
+
+4) yearlyScopeRoot()
+   → REVIEW LATER:
+     yearlyScopeRoot() currently continues on some GetYearlyPayslip()
+     errors instead of returning the error, unlike the monthly counterpart.
+   → Do not change during sanitization; inspect during actual refactor.
+
+5) ImportPayroll()
+   → REVIEW LATER:
+     source/destination file Close() errors are currently not handled.
+   → Not part of tonight's structural refactor.
+
+
+TARGET STRUCTURE
+----------------
+
+App
+├── lifecycle / initialization
+├── Wails-facing query methods
+├── settings/config methods
+└── native dialogs
+
+Monthly Generation Service
+├── monthlyScopeRoot()
+├── GenerateMonthlyPayslip()
+├── GenerateMonthlyPayslips()
+├── EnsureMonthlyXLSX()
+├── GenerateMonthlyPayslipsForScope()
+└── GetMonthlyBulkOutputDirectory()
+
+Yearly Generation Service
+├── GenerateYearlyPayslip()
+├── GenerateYearlyPayslips()
+├── EnsureYearlyXLSX()
+├── yearlyScopeRoot()
+├── GenerateYearlyPayslipsForScope()
+└── GetYearlyBulkOutputDirectory()
+
+Payroll Import Service
+└── ImportPayroll()
+
+File / OS Utility
+├── OpenMonthlyPayslip()
+├── OpenYearlyPayslip()
+└── OpenDir()
+
+
+NOTES
+-----
+
+- No refactoring performed during inspection.
+- app.go currently ~1200 LOC.
+- Goal is NOT to split app.go into a pile of app_*.go files.
+- Actual refactor should establish meaningful package/service boundaries
+  based on existing internal packages and dependencies.
+- App should eventually act primarily as the Wails API/orchestration layer.
+- Existing functionality should remain unchanged during the structural
+  refactor.

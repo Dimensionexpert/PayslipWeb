@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 
@@ -62,7 +63,7 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("loading config: %w", err)
 	}
 
-	// Save configuration if needed.
+	// Save configuration.
 	if err := config.Save(cfg); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("saving config: %w", err)
@@ -85,7 +86,7 @@ func (a *App) shutdown(ctx context.Context) {
 	}
 
 	if err := a.db.Close(); err != nil {
-		fmt.Println("closing database:", err)
+		log.Printf("closing database: %v", err)
 	}
 }
 
