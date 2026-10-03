@@ -291,12 +291,23 @@ func (a *App) GenerateMonthlyPayslips(
 	year int,
 ) error {
 
-	monthlyRoot, err := a.EnsureMonthlyXLSX(
+	monthlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"monthly_template.xlsx",
+	)
+
+	monthlyRoot, err := desktopGenerator.EnsureMonthlyXLSX(
 		month,
 		year,
+		a.db,
+		a.paths.CacheDir,
+		monthlyTemplate,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"[excel] ensuring monthly XLSX files: %w",
+			err,
+		)
 	}
 
 	if a.config.OutputDir == "" {
@@ -354,14 +365,23 @@ func (a *App) GenerateMonthlyPayslips(
 func (a *App) GenerateYearlyPayslips(
 	financialYearStart int,
 ) error {
+	yearlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"yearly_template.xlsx",
+	)
 
-	yearlyRoot, err := a.EnsureYearlyXLSX(
+	yearlyRoot, err := desktopGenerator.EnsureYearlyXLSX(
 		financialYearStart,
+		a.db,
+		a.paths.CacheDir,
+		yearlyTemplate,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"[excel] ensuring yearly XLSX files: %w",
+			err,
+		)
 	}
-
 	if a.config.OutputDir == "" {
 		return fmt.Errorf("output directory is not configured")
 	}
@@ -589,129 +609,6 @@ func (a *App) GetClusters() ([]dto.ClusterSummary, error) {
 	return query.GetClusters(a.db)
 }
 
-func (a *App) EnsureMonthlyXLSX(
-	month int,
-	year int,
-) (string, error) {
-
-	payslips, err := database.GetPayslips(
-		a.db,
-		month,
-		year,
-	)
-	if err != nil {
-		return "", fmt.Errorf("fetching payslips: %w", err)
-	}
-
-	if len(payslips) == 0 {
-		return "", fmt.Errorf("no payslips found")
-	}
-
-	cacheDir := a.paths.CacheDir
-
-	monthlyRoot := filepath.Join(
-		cacheDir,
-		fmt.Sprintf("%s_%d", time.Month(month), year),
-	)
-
-	readyMarker := filepath.Join(
-		monthlyRoot,
-		".xlsx-ready",
-	)
-
-	if _, err := os.Stat(readyMarker); err == nil {
-		return monthlyRoot, nil
-	} else if !os.IsNotExist(err) {
-		return "", fmt.Errorf("checking monthly XLSX cache: %w", err)
-	}
-
-	monthlyTemplate := filepath.Join(
-		a.paths.ResourcesDir,
-		"monthly_template.xlsx",
-	)
-
-	if err := genexcel.GenerateMonthlyPayslips(
-		monthlyTemplate,
-		cacheDir,
-		payslips,
-	); err != nil {
-		return "", fmt.Errorf(
-			"generating monthly Excel files: %w",
-			err,
-		)
-	}
-
-	if err := os.WriteFile(
-		readyMarker,
-		[]byte{},
-		0644,
-	); err != nil {
-		return "", fmt.Errorf(
-			"writing monthly XLSX ready marker: %w",
-			err,
-		)
-	}
-
-	return monthlyRoot, nil
-}
-
-func (a *App) EnsureYearlyXLSX(
-	financialYearStart int,
-) (string, error) {
-
-	cacheDir := a.paths.CacheDir
-
-	yearlyRoot := filepath.Join(
-		cacheDir,
-		fmt.Sprintf(
-			"Financial_Year_%d_%d",
-			financialYearStart,
-			financialYearStart+1,
-		),
-	)
-
-	readyMarker := filepath.Join(
-		yearlyRoot,
-		".xlsx-ready",
-	)
-
-	if _, err := os.Stat(readyMarker); err == nil {
-		return yearlyRoot, nil
-	} else if !os.IsNotExist(err) {
-		return "", fmt.Errorf("checking yearly XLSX cache: %w", err)
-	}
-
-	yearlyTemplate := filepath.Join(
-		a.paths.ResourcesDir,
-		"yearly_template.xlsx",
-	)
-
-	if err := generator.ExportYearlyEmployeePayslips(
-		a.db,
-		yearlyTemplate,
-		cacheDir,
-		financialYearStart,
-	); err != nil {
-		return "", fmt.Errorf(
-			"generating yearly Excel files: %w",
-			err,
-		)
-	}
-
-	if err := os.WriteFile(
-		readyMarker,
-		[]byte{},
-		0644,
-	); err != nil {
-		return "", fmt.Errorf(
-			"writing yearly XLSX ready marker: %w",
-			err,
-		)
-	}
-
-	return yearlyRoot, nil
-}
-
 func (a *App) GenerateMonthlyPayslipsForScope(
 	scope string,
 	cluster string,
@@ -720,8 +617,22 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 	year int,
 ) (int, error) {
 	// Make sure all XLSX files for this month exist.
-	if _, err := a.EnsureMonthlyXLSX(month, year); err != nil {
-		return 0, err
+	monthlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"monthly_template.xlsx",
+	)
+
+	if _, err := desktopGenerator.EnsureMonthlyXLSX(
+		month,
+		year,
+		a.db,
+		a.paths.CacheDir,
+		monthlyTemplate,
+	); err != nil {
+		return 0, fmt.Errorf(
+			"[excel] ensuring monthly XLSX files: %w",
+			err,
+		)
 	}
 
 	// Pick the directory based on the requested scope.
@@ -795,8 +706,21 @@ func (a *App) GenerateYearlyPayslipsForScope(
 	udise string,
 	financialYearStart int,
 ) (int, error) {
-	if _, err := a.EnsureYearlyXLSX(financialYearStart); err != nil {
-		return 0, err
+	yearlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"yearly_template.xlsx",
+	)
+
+	if _, err := desktopGenerator.EnsureYearlyXLSX(
+		financialYearStart,
+		a.db,
+		a.paths.CacheDir,
+		yearlyTemplate,
+	); err != nil {
+		return 0, fmt.Errorf(
+			"[excel] ensuring yearly XLSX files: %w",
+			err,
+		)
 	}
 
 	root, err := desktopGenerator.YearlyPayslipRoot(

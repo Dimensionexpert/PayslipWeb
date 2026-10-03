@@ -6,14 +6,6 @@ export function ChooseOutputDirectory() {
   return window['go']['main']['App']['ChooseOutputDirectory']();
 }
 
-export function EnsureMonthlyXLSX(arg1, arg2) {
-  return window['go']['main']['App']['EnsureMonthlyXLSX'](arg1, arg2);
-}
-
-export function EnsureYearlyXLSX(arg1) {
-  return window['go']['main']['App']['EnsureYearlyXLSX'](arg1);
-}
-
 export function GenerateMonthlyPayslip(arg1, arg2, arg3) {
   return window['go']['main']['App']['GenerateMonthlyPayslip'](arg1, arg2, arg3);
 }
