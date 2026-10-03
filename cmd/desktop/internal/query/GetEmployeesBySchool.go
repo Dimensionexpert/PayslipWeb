@@ -2,6 +2,7 @@ package query
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
 )
@@ -24,7 +25,11 @@ func GetEmployeesBySchool(
 		ORDER BY e.name
 	`, udise)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"[query] querying employees for school %s: %w",
+			udise,
+			err,
+		)
 	}
 	defer rows.Close()
 
@@ -33,22 +38,29 @@ func GetEmployeesBySchool(
 	for rows.Next() {
 		var employee dto.EmployeeSummary
 
-		err := rows.Scan(
+		if err := rows.Scan(
 			&employee.ShalarthID,
 			&employee.Name,
 			&employee.Designation,
 			&employee.SchoolName,
 			&employee.UDISECode,
-		)
-		if err != nil {
-			return nil, err
+		); err != nil {
+			return nil, fmt.Errorf(
+				"[scan] scanning employee for school %s: %w",
+				udise,
+				err,
+			)
 		}
 
 		employees = append(employees, employee)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"[rows] iterating employees for school %s: %w",
+			udise,
+			err,
+		)
 	}
 
 	return employees, nil

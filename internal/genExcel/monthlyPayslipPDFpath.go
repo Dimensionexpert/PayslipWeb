@@ -8,6 +8,7 @@ import (
 	"github.com/Dimensionexpert/payslip/internal/models"
 )
 
+// MonthlyPayslipPDFPath returns the path where the monthly payslip PDF should be saved.
 func MonthlyPayslipPDFPath(
 	outputDir string,
 	data models.PayslipExport,

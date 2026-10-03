@@ -17,6 +17,7 @@ import (
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/config"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
+	desktopGenerator "github.com/Dimensionexpert/payslip/cmd/desktop/internal/generator"
 	osutil "github.com/Dimensionexpert/payslip/cmd/desktop/internal/osutils"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/paths"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
@@ -132,102 +133,6 @@ func (a *App) GetSchoolsByCluster(
 	cluster string,
 ) ([]dto.SchoolSummary, error) {
 	return query.GetSchoolsByCluster(a.db, cluster)
-}
-
-func (a *App) monthlyScopeRoot(
-	baseDir string,
-	scope string,
-	cluster string,
-	udise string,
-	month int,
-	year int,
-) (string, error) {
-	if baseDir == "" {
-		return "", fmt.Errorf("base directory is not configured")
-	}
-
-	root := filepath.Join(
-		baseDir,
-		fmt.Sprintf("%s_%d", time.Month(month), year),
-	)
-
-	switch scope {
-	case "all":
-		return root, nil
-
-	case "school":
-		employees, err := query.GetEmployeesBySchool(a.db, udise)
-		if err != nil {
-			return "", err
-		}
-
-		if len(employees) == 0 {
-			return "", fmt.Errorf("no employees found for school %s", udise)
-		}
-
-		payslip, err := database.GetPayslip(
-			a.db,
-			employees[0].ShalarthID,
-			month,
-			year,
-		)
-		if err != nil {
-			return "", err
-		}
-
-		pdfPath := genexcel.MonthlyPayslipPDFPath(
-			baseDir,
-			payslip,
-		)
-
-		return filepath.Dir(filepath.Dir(pdfPath)), nil
-
-	case "cluster":
-		schools, err := query.GetSchoolsByCluster(a.db, cluster)
-		if err != nil {
-			return "", err
-		}
-
-		for _, school := range schools {
-			employees, err := query.GetEmployeesBySchool(
-				a.db,
-				school.UDISECode,
-			)
-			if err != nil {
-				return "", err
-			}
-
-			if len(employees) == 0 {
-				continue
-			}
-
-			payslip, err := database.GetPayslip(
-				a.db,
-				employees[0].ShalarthID,
-				month,
-				year,
-			)
-			if err != nil {
-				return "", err
-			}
-
-			pdfPath := genexcel.MonthlyPayslipPDFPath(
-				baseDir,
-				payslip,
-			)
-
-			return filepath.Dir(
-				filepath.Dir(
-					filepath.Dir(pdfPath),
-				),
-			), nil
-		}
-
-		return "", fmt.Errorf("no employees found in cluster %s", cluster)
-
-	default:
-		return "", fmt.Errorf("invalid generation scope: %s", scope)
-	}
 }
 
 func (a *App) GenerateMonthlyPayslip(
@@ -820,7 +725,8 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 	}
 
 	// Pick the directory based on the requested scope.
-	root, err := a.monthlyScopeRoot(
+	root, err := desktopGenerator.ResolveMonthlyScopeRoot(
+		a.db,
 		a.paths.CacheDir,
 		scope,
 		cluster,
@@ -832,7 +738,8 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 		return 0, err
 	}
 
-	outputRoot, err := a.monthlyScopeRoot(
+	outputRoot, err := desktopGenerator.ResolveMonthlyScopeRoot(
+		a.db,
 		a.config.OutputDir,
 		scope,
 		cluster,
@@ -882,6 +789,7 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 	return len(jobs), nil
 }
 
+// yearlyScopeRoot returns the root directory for a yearly scope
 func (a *App) yearlyScopeRoot(
 	baseDir string,
 	scope string,
@@ -1156,7 +1064,8 @@ func (a *App) GetMonthlyBulkOutputDirectory(
 	month int,
 	year int,
 ) (string, error) {
-	return a.monthlyScopeRoot(
+	return desktopGenerator.ResolveMonthlyScopeRoot(
+		a.db,
 		a.config.OutputDir,
 		scope,
 		cluster,
