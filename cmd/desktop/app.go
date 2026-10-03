@@ -789,106 +789,6 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 	return len(jobs), nil
 }
 
-// yearlyScopeRoot returns the root directory for a yearly scope
-func (a *App) yearlyScopeRoot(
-	baseDir string,
-	scope string,
-	cluster string,
-	udise string,
-	financialYearStart int,
-) (string, error) {
-	if baseDir == "" {
-		return "", fmt.Errorf("base directory is not configured")
-	}
-
-	root := filepath.Join(
-		baseDir,
-		fmt.Sprintf(
-			"Financial_Year_%d_%d",
-			financialYearStart,
-			financialYearStart+1,
-		),
-	)
-
-	switch scope {
-	case "all":
-		return root, nil
-
-	case "school":
-		employees, err := query.GetEmployeesBySchool(a.db, udise)
-		if err != nil {
-			return "", err
-		}
-
-		if len(employees) == 0 {
-			return "", fmt.Errorf("no employees found for school %s", udise)
-		}
-
-		yearly, err := database.GetYearlyPayslip(
-			a.db,
-			employees[0].ShalarthID,
-			financialYearStart,
-		)
-		if err != nil {
-			return "", err
-		}
-
-		pdfPath := genexcel.YearlyPayslipPDFPath(
-			baseDir,
-			yearly,
-			financialYearStart,
-		)
-
-		return filepath.Dir(filepath.Dir(pdfPath)), nil
-
-	case "cluster":
-		schools, err := query.GetSchoolsByCluster(a.db, cluster)
-		if err != nil {
-			return "", err
-		}
-
-		for _, school := range schools {
-			employees, err := query.GetEmployeesBySchool(
-				a.db,
-				school.UDISECode,
-			)
-			if err != nil {
-				return "", err
-			}
-
-			if len(employees) == 0 {
-				continue
-			}
-
-			yearly, err := database.GetYearlyPayslip(
-				a.db,
-				employees[0].ShalarthID,
-				financialYearStart,
-			)
-			if err != nil {
-				continue
-			}
-
-			pdfPath := genexcel.YearlyPayslipPDFPath(
-				baseDir,
-				yearly,
-				financialYearStart,
-			)
-
-			return filepath.Dir(
-				filepath.Dir(
-					filepath.Dir(pdfPath),
-				),
-			), nil
-		}
-
-		return "", fmt.Errorf("no employees found in cluster %s", cluster)
-
-	default:
-		return "", fmt.Errorf("invalid generation scope: %s", scope)
-	}
-}
-
 func (a *App) GenerateYearlyPayslipsForScope(
 	scope string,
 	cluster string,
@@ -899,23 +799,25 @@ func (a *App) GenerateYearlyPayslipsForScope(
 		return 0, err
 	}
 
-	root, err := a.yearlyScopeRoot(
-		a.paths.CacheDir,
-		scope,
+	root, err := desktopGenerator.YearlyPayslipRoot(
+		a.db,
 		cluster,
+		scope,
 		udise,
 		financialYearStart,
+		a.paths.CacheDir,
 	)
 	if err != nil {
 		return 0, err
 	}
 
-	outputRoot, err := a.yearlyScopeRoot(
-		a.config.OutputDir,
-		scope,
+	outputRoot, err := desktopGenerator.YearlyPayslipRoot(
+		a.db,
 		cluster,
+		scope,
 		udise,
 		financialYearStart,
+		a.config.OutputDir,
 	)
 	if err != nil {
 		return 0, err
@@ -1081,11 +983,12 @@ func (a *App) GetYearlyBulkOutputDirectory(
 	udise string,
 	financialYearStart int,
 ) (string, error) {
-	return a.yearlyScopeRoot(
-		a.config.OutputDir,
-		scope,
+	return desktopGenerator.YearlyPayslipRoot(
+		a.db,
 		cluster,
+		scope,
 		udise,
 		financialYearStart,
+		a.config.OutputDir,
 	)
 }

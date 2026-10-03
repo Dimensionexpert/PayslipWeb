@@ -4,19 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 )
 
-// Resolve the school's output directory from one existing payslip.
-func mResolveSchoolScopeRoot(
+func yResolveSchoolScopeRoot(
 	db *sql.DB,
 	udise string,
-	month int,
-	year int,
+	financialYearStart int,
 	baseDir string,
 ) (string, error) {
 	employees, err := query.GetEmployeesBySchool(db, udise)
@@ -35,11 +32,10 @@ func mResolveSchoolScopeRoot(
 		)
 	}
 
-	payslip, err := database.GetPayslip(
+	payslip, err := database.GetYearlyPayslip(
 		db,
 		employees[0].ShalarthID,
-		month,
-		year,
+		financialYearStart,
 	)
 	if err != nil {
 		return "", fmt.Errorf(
@@ -48,17 +44,19 @@ func mResolveSchoolScopeRoot(
 			err,
 		)
 	}
-
-	pdfPath := genexcel.MonthlyPayslipPDFPath(baseDir, payslip)
+	pdfPath := genexcel.YearlyPayslipPDFPath(
+		baseDir,
+		payslip,
+		financialYearStart,
+	)
 
 	return filepath.Dir(filepath.Dir(pdfPath)), nil
 }
 
-func mResolveClusterScopeRoot(
+func yResolveClusterScopeRoot(
 	db *sql.DB,
 	cluster string,
-	month int,
-	year int,
+	financialYearStart int,
 	baseDir string,
 ) (string, error) {
 	schools, err := query.GetSchoolsByCluster(db, cluster)
@@ -84,7 +82,7 @@ func mResolveClusterScopeRoot(
 		)
 		if err != nil {
 			return "", fmt.Errorf(
-				"[query] getting employees for school %s in cluster %s: %w",
+				"[query] getting payslip for school %s in cluster %s: %w",
 				school.UDISECode,
 				cluster,
 				err,
@@ -95,24 +93,23 @@ func mResolveClusterScopeRoot(
 			continue
 		}
 
-		payslip, err := database.GetPayslip(
+		payslip, err := database.GetYearlyPayslip(
 			db,
 			employees[0].ShalarthID,
-			month,
-			year,
+			financialYearStart,
 		)
 		if err != nil {
 			return "", fmt.Errorf(
-				"[query] getting payslip for school %s in cluster %s: %w",
+				"[query] getting payslip for school %s: %w",
 				school.UDISECode,
-				cluster,
 				err,
 			)
 		}
 
-		pdfPath := genexcel.MonthlyPayslipPDFPath(
+		pdfPath := genexcel.YearlyPayslipPDFPath(
 			baseDir,
 			payslip,
+			financialYearStart,
 		)
 
 		return filepath.Dir(
@@ -128,15 +125,13 @@ func mResolveClusterScopeRoot(
 	)
 }
 
-// ResolveMonthlyScopeRoot resolves the output directory for a monthly generation scope.
-func ResolveMonthlyScopeRoot(
+func YearlyPayslipRoot(
 	db *sql.DB,
-	baseDir string,
-	scope string,
 	cluster string,
+	scope string,
 	udise string,
-	month int,
-	year int,
+	financialYearStart int,
+	baseDir string,
 ) (string, error) {
 	if baseDir == "" {
 		return "", fmt.Errorf("[path] base directory not configured")
@@ -144,7 +139,11 @@ func ResolveMonthlyScopeRoot(
 
 	root := filepath.Join(
 		baseDir,
-		fmt.Sprintf("%s_%d", time.Month(month), year),
+		fmt.Sprintf(
+			"Financial_Year_%d_%d",
+			financialYearStart,
+			financialYearStart+1,
+		),
 	)
 
 	switch scope {
@@ -152,20 +151,18 @@ func ResolveMonthlyScopeRoot(
 		return root, nil
 
 	case "school":
-		return mResolveSchoolScopeRoot(
+		return yResolveSchoolScopeRoot(
 			db,
 			udise,
-			month,
-			year,
+			financialYearStart,
 			baseDir,
 		)
 
 	case "cluster":
-		return mResolveClusterScopeRoot(
+		return yResolveClusterScopeRoot(
 			db,
 			cluster,
-			month,
-			year,
+			financialYearStart,
 			baseDir,
 		)
 
