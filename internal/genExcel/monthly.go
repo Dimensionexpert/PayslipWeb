@@ -118,8 +118,7 @@ func GenerateMonthlyPayslip(
 
 	f.SetCellValue(sheet, "C26", payslip.TotalPay)
 
-	totalDeduction := payslip.TotalGovtDeductions +
-		payslip.NGRTotalDeduction
+	totalDeduction := payslip.TotalGovtDeductions + payslip.NPSEmpContri + payslip.NPSEmprContri + payslip.NPSEmpContriArr + payslip.NPSEmprContriArr + payslip.NGRTotalDeduction
 
 	f.SetCellValue(sheet, "F26", totalDeduction)
 
