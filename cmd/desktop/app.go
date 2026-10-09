@@ -10,7 +10,6 @@ import (
 	"os/exec"
 
 	"path/filepath"
-	"strings"
 	"time"
 
 	goRuntime "runtime"
@@ -25,7 +24,6 @@ import (
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
-	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
 	"github.com/Dimensionexpert/payslip/internal/generator"
 	"github.com/Dimensionexpert/payslip/internal/importer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -140,60 +138,25 @@ func (a *App) GenerateMonthlyPayslip(
 	month int,
 	year int,
 ) (string, error) {
+	monthlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"monthly_template.xlsx",
+	)
 
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return "", fmt.Errorf("output directory is not configured")
-	}
-
-	// XLSX generation
-
-	payslip, err := database.GetPayslip(
+	pdfPath, err := desktopGenerator.GenerateMonthlyPayslip(
 		a.db,
 		shalarthID,
 		month,
 		year,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	monthlyTemplate := filepath.Join(a.paths.ResourcesDir, "monthly_template.xlsx")
-
-	xlsxPath, err := genexcel.GenerateMonthlyPayslip(
+		a.config.OutputDir,
 		monthlyTemplate,
-		outputDir,
-		payslip,
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf(
+			"[excel] generating individual monthly payslip: %w",
+			err,
+		)
 	}
-
-	// PDF conversion
-
-	pdfDir := filepath.Join(
-		filepath.Dir(xlsxPath),
-		"PDF",
-	)
-
-	if err := genPDF.ConvertToPDF(
-		xlsxPath,
-		pdfDir,
-		0,
-	); err != nil {
-		return "", err
-	}
-
-	pdfFilename := strings.TrimSuffix(
-		filepath.Base(xlsxPath),
-		filepath.Ext(xlsxPath),
-	) + ".pdf"
-
-	pdfPath := filepath.Join(
-		pdfDir,
-		pdfFilename,
-	)
 
 	return pdfPath, nil
 }
@@ -229,59 +192,24 @@ func (a *App) GenerateYearlyPayslip(
 	shalarthID string,
 	financialYearStart int,
 ) (string, error) {
+	yearlyTemplate := filepath.Join(
+		a.paths.ResourcesDir,
+		"yearly_template.xlsx",
+	)
 
-	// XLSX generation
-
-	yearly, err := database.GetYearlyPayslip(
+	pdfPath, err := desktopGenerator.GenerateYearlyPayslip(
 		a.db,
 		shalarthID,
 		financialYearStart,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	yearlyTemplate := filepath.Join(a.paths.ResourcesDir, "yearly_template.xlsx")
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return "", fmt.Errorf("output directory is not configured")
-	}
-
-	xlsxPath, err := genexcel.GenerateYearlyPayslip(
+		a.config.OutputDir,
 		yearlyTemplate,
-		outputDir,
-		yearly,
-		financialYearStart,
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf(
+			"[excel] generating individual yearly payslip: %w",
+			err,
+		)
 	}
-
-	// PDF conversion
-
-	pdfDir := filepath.Join(
-		filepath.Dir(xlsxPath),
-		"PDF",
-	)
-
-	if err := genPDF.ConvertToPDF(
-		xlsxPath,
-		pdfDir,
-		0,
-	); err != nil {
-		return "", err
-	}
-
-	pdfFilename := strings.TrimSuffix(
-		filepath.Base(xlsxPath),
-		filepath.Ext(xlsxPath),
-	) + ".pdf"
-
-	pdfPath := filepath.Join(
-		pdfDir,
-		pdfFilename,
-	)
 
 	return pdfPath, nil
 }

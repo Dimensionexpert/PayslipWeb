@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
+	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
 )
 
 // Resolve the school's output directory from one existing payslip.
@@ -175,4 +177,76 @@ func ResolveMonthlyScopeRoot(
 			scope,
 		)
 	}
+}
+
+// Generate Monthly payslip.
+// intentionally not derived from the cache, it is to quickly apply arbitary changes requested.
+
+func GenerateMonthlyPayslip(
+	db *sql.DB,
+	shalarthID string,
+	month int,
+	year int,
+	outputDir string,
+	monthlyTemplate string,
+) (string, error) {
+	if outputDir == "" {
+		return "", fmt.Errorf("[path] output directory is not configured")
+	}
+
+	payslip, err := database.GetPayslip(
+		db,
+		shalarthID,
+		month,
+		year,
+	)
+	if err != nil {
+		return "", fmt.Errorf(
+			"[query] fetching monthly payslip for employee %s: %w",
+			shalarthID,
+			err,
+		)
+	}
+
+	xlsxPath, err := genexcel.GenerateMonthlyPayslip(
+		monthlyTemplate,
+		outputDir,
+		payslip,
+	)
+	if err != nil {
+		return "", fmt.Errorf(
+			"[excel] generating monthly payslip for employee %s: %w",
+			shalarthID,
+			err,
+		)
+	}
+
+	pdfDir := filepath.Join(
+		filepath.Dir(xlsxPath),
+		"PDF",
+	)
+
+	if err := genPDF.ConvertToPDF(
+		xlsxPath,
+		pdfDir,
+		0,
+	); err != nil {
+		return "", fmt.Errorf(
+			"[pdf] converting monthly payslip for employee %s: %w",
+			shalarthID,
+			err,
+		)
+	}
+
+	pdfFilename := strings.TrimSuffix(
+		filepath.Base(xlsxPath),
+		filepath.Ext(xlsxPath),
+	) + ".pdf"
+
+	pdfPath := filepath.Join(
+		pdfDir,
+		pdfFilename,
+	)
+
+	return pdfPath, nil
 }
