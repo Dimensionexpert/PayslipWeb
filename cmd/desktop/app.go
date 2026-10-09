@@ -218,152 +218,26 @@ func (a *App) GenerateMonthlyPayslips(
 	month int,
 	year int,
 ) error {
-
-	monthlyTemplate := filepath.Join(
-		a.paths.ResourcesDir,
-		"monthly_template.xlsx",
-	)
-
-	monthlyRoot, err := desktopGenerator.EnsureMonthlyXLSX(
+	return desktopGenerator.GenerateMonthlyPayslips(
+		a.db,
 		month,
 		year,
-		a.db,
 		a.paths.CacheDir,
-		monthlyTemplate,
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"[excel] ensuring monthly XLSX files: %w",
-			err,
-		)
-	}
-
-	if a.config.OutputDir == "" {
-		return fmt.Errorf("output directory is not configured")
-	}
-
-	monthlyOutputRoot := filepath.Join(
+		a.paths.ResourcesDir,
 		a.config.OutputDir,
-		fmt.Sprintf("%s_%d", time.Month(month), year),
 	)
-
-	conversionJobs, err := generator.CollectMissingPDFJobs(
-		monthlyRoot,
-		monthlyOutputRoot,
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"collecting monthly PDF jobs: %w",
-			err,
-		)
-	}
-
-	results := concurrency.RunPDFConversion(
-		conversionJobs,
-		8,
-		func(result concurrency.ConversionResult) {
-			if result.Err != nil {
-				fmt.Printf(
-					"MONTHLY PDF FAILED: %s: %v\n",
-					result.Filepath,
-					result.Err,
-				)
-			}
-		},
-	)
-
-	success, failed := generator.CountConversionResults(results)
-
-	fmt.Printf(
-		"Monthly PDF conversion: %d succeeded, %d failed\n",
-		success,
-		failed,
-	)
-
-	if failed > 0 {
-		return fmt.Errorf(
-			"monthly PDF conversion failed for %d file(s)",
-			failed,
-		)
-	}
-
-	return nil
 }
 
 func (a *App) GenerateYearlyPayslips(
 	financialYearStart int,
 ) error {
-	yearlyTemplate := filepath.Join(
-		a.paths.ResourcesDir,
-		"yearly_template.xlsx",
-	)
-
-	yearlyRoot, err := desktopGenerator.EnsureYearlyXLSX(
-		financialYearStart,
+	return desktopGenerator.GenerateYearlyPayslips(
 		a.db,
+		financialYearStart,
 		a.paths.CacheDir,
-		yearlyTemplate,
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"[excel] ensuring yearly XLSX files: %w",
-			err,
-		)
-	}
-	if a.config.OutputDir == "" {
-		return fmt.Errorf("output directory is not configured")
-	}
-
-	yearlyOutputRoot := filepath.Join(
+		a.paths.ResourcesDir,
 		a.config.OutputDir,
-		fmt.Sprintf(
-			"Financial_Year_%d_%d",
-			financialYearStart,
-			financialYearStart+1,
-		),
 	)
-
-	conversionJobs, err := generator.CollectMissingPDFJobs(
-		yearlyRoot,
-		yearlyOutputRoot,
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"collecting yearly PDF jobs: %w",
-			err,
-		)
-	}
-
-	results := concurrency.RunPDFConversion(
-		conversionJobs,
-		8,
-		func(result concurrency.ConversionResult) {
-			if result.Err != nil {
-				fmt.Printf(
-					"YEARLY PDF FAILED: %s: %v\n",
-					result.Filepath,
-					result.Err,
-				)
-			}
-		},
-	)
-
-	success, failed := generator.CountConversionResults(results)
-
-	fmt.Printf(
-		"Yearly PDF conversion: %d succeeded, %d failed\n",
-		success,
-		failed,
-	)
-
-	if failed > 0 {
-		return fmt.Errorf(
-			"yearly PDF conversion failed for %d file(s)",
-			failed,
-		)
-	}
-
-	return nil
 }
 
 func (a *App) SetOutputDirectory() (string, error) {

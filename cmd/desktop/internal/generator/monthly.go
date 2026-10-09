@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
+	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
+	"github.com/Dimensionexpert/payslip/internal/generator"
 )
 
 // Resolve the school's output directory from one existing payslip.
@@ -249,4 +251,86 @@ func GenerateMonthlyPayslip(
 	)
 
 	return pdfPath, nil
+}
+
+// Generating bulk payslips from cache, to save time on xlsx gen on every generate operatin
+func GenerateMonthlyPayslips(
+	db *sql.DB,
+	month int,
+	year int,
+	cacheDir string,
+	resourcesDir string,
+	outputDir string,
+) error {
+	monthlyTemplate := filepath.Join(
+		resourcesDir,
+		"monthly_template.xlsx",
+	)
+
+	monthlyRoot, err := EnsureMonthlyXLSX(
+		month,
+		year,
+		db,
+		cacheDir,
+		monthlyTemplate,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"[excel] ensuring monthly XLSX files: %w",
+			err,
+		)
+	}
+
+	if outputDir == "" {
+		return fmt.Errorf(
+			"[path] output directory is not configured",
+		)
+	}
+
+	monthlyOutputRoot := filepath.Join(
+		outputDir,
+		fmt.Sprintf("%s_%d", time.Month(month), year),
+	)
+
+	conversionJobs, err := generator.CollectMissingPDFJobs(
+		monthlyRoot,
+		monthlyOutputRoot,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"[file] collecting monthly PDF jobs: %w",
+			err,
+		)
+	}
+
+	results := concurrency.RunPDFConversion(
+		conversionJobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"MONTHLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	success, failed := generator.CountConversionResults(results)
+
+	fmt.Printf(
+		"Monthly PDF conversion: %d succeeded, %d failed\n",
+		success,
+		failed,
+	)
+
+	if failed > 0 {
+		return fmt.Errorf(
+			"[pdf] monthly conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return nil
 }

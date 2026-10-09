@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
+	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
+	"github.com/Dimensionexpert/payslip/internal/generator"
 )
 
 func yResolveSchoolScopeRoot(
@@ -247,4 +249,87 @@ func GenerateYearlyPayslip(
 	)
 
 	return pdfPath, nil
+}
+
+func GenerateYearlyPayslips(
+	db *sql.DB,
+	financialYearStart int,
+	cacheDir string,
+	resourcesDir string,
+	outputDir string,
+) error {
+	yearlyTemplate := filepath.Join(
+		resourcesDir,
+		"yearly_template.xlsx",
+	)
+
+	yearlyRoot, err := EnsureYearlyXLSX(
+		financialYearStart,
+		db,
+		cacheDir,
+		yearlyTemplate,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"[excel] ensuring yearly XLSX files: %w",
+			err,
+		)
+	}
+
+	if outputDir == "" {
+		return fmt.Errorf(
+			"[path] output directory is not configured",
+		)
+	}
+
+	yearlyOutputRoot := filepath.Join(
+		outputDir,
+		fmt.Sprintf(
+			"Financial_Year_%d_%d",
+			financialYearStart,
+			financialYearStart+1,
+		),
+	)
+
+	conversionJobs, err := generator.CollectMissingPDFJobs(
+		yearlyRoot,
+		yearlyOutputRoot,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"[file] collecting yearly PDF jobs: %w",
+			err,
+		)
+	}
+
+	results := concurrency.RunPDFConversion(
+		conversionJobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"YEARLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	success, failed := generator.CountConversionResults(results)
+
+	fmt.Printf(
+		"Yearly PDF conversion: %d succeeded, %d failed\n",
+		success,
+		failed,
+	)
+
+	if failed > 0 {
+		return fmt.Errorf(
+			"[pdf] yearly conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return nil
 }
