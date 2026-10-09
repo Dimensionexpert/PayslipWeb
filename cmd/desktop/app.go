@@ -21,10 +21,8 @@ import (
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/paths"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/resources"
-	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
-	"github.com/Dimensionexpert/payslip/internal/generator"
 	"github.com/Dimensionexpert/payslip/internal/importer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -278,62 +276,13 @@ func (a *App) OpenMonthlyPayslip(
 	month int,
 	year int,
 ) error {
-
-	payslip, err := database.GetPayslip(
+	return desktopGenerator.OpenMonthlyPayslip(
 		a.db,
 		shalarthID,
 		month,
 		year,
+		a.config.OutputDir,
 	)
-	if err != nil {
-		return fmt.Errorf("fetching payslip: %w", err)
-	}
-
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return fmt.Errorf("output directory is not configured")
-	}
-
-	pdfPath := genexcel.MonthlyPayslipPDFPath(
-		outputDir,
-		payslip,
-	)
-
-	if _, err := os.Stat(pdfPath); err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf(
-				"payslip PDF not found: %s",
-				pdfPath,
-			)
-		}
-
-		return fmt.Errorf(
-			"checking payslip PDF: %w",
-			err,
-		)
-	}
-
-	// Native system viewer launcher replacing BrowserOpenURL
-	var cmd *exec.Cmd
-	switch goRuntime.GOOS {
-	case "linux":
-		cmd = exec.Command("xdg-open", pdfPath)
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", pdfPath)
-	case "darwin":
-		cmd = exec.Command("open", pdfPath)
-	default:
-		return fmt.Errorf("unsupported platform for opening files")
-	}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to open PDF launcher: %w", err)
-	}
-
-	fmt.Println(pdfPath)
-
-	return nil
 }
 
 func (a *App) OpenYearlyPayslip(
@@ -418,41 +367,10 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 	month int,
 	year int,
 ) (int, error) {
-	// Make sure all XLSX files for this month exist.
-	monthlyTemplate := filepath.Join(
+	return desktopGenerator.GenerateMonthlyPayslipsForScope(
+		a.db,
+		a.paths.CacheDir,
 		a.paths.ResourcesDir,
-		"monthly_template.xlsx",
-	)
-
-	if _, err := desktopGenerator.EnsureMonthlyXLSX(
-		month,
-		year,
-		a.db,
-		a.paths.CacheDir,
-		monthlyTemplate,
-	); err != nil {
-		return 0, fmt.Errorf(
-			"[excel] ensuring monthly XLSX files: %w",
-			err,
-		)
-	}
-
-	// Pick the directory based on the requested scope.
-	root, err := desktopGenerator.ResolveMonthlyScopeRoot(
-		a.db,
-		a.paths.CacheDir,
-		scope,
-		cluster,
-		udise,
-		month,
-		year,
-	)
-	if err != nil {
-		return 0, err
-	}
-
-	outputRoot, err := desktopGenerator.ResolveMonthlyScopeRoot(
-		a.db,
 		a.config.OutputDir,
 		scope,
 		cluster,
@@ -460,46 +378,6 @@ func (a *App) GenerateMonthlyPayslipsForScope(
 		month,
 		year,
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	// Convert only PDFs that don't exist yet.
-	jobs, err := generator.CollectMissingPDFJobs(
-		root,
-		outputRoot,
-	)
-	if err != nil {
-		return 0, fmt.Errorf("collecting PDF jobs: %w", err)
-	}
-	if len(jobs) == 0 {
-		return 0, nil
-	}
-
-	results := concurrency.RunPDFConversion(
-		jobs,
-		8,
-		func(result concurrency.ConversionResult) {
-			if result.Err != nil {
-				fmt.Printf(
-					"MONTHLY PDF FAILED: %s: %v\n",
-					result.Filepath,
-					result.Err,
-				)
-			}
-		},
-	)
-
-	_, failed := generator.CountConversionResults(results)
-
-	if failed > 0 {
-		return 0, fmt.Errorf(
-			"monthly PDF conversion failed for %d file(s)",
-			failed,
-		)
-	}
-
-	return len(jobs), nil
 }
 
 func (a *App) GenerateYearlyPayslipsForScope(
@@ -508,85 +386,16 @@ func (a *App) GenerateYearlyPayslipsForScope(
 	udise string,
 	financialYearStart int,
 ) (int, error) {
-	yearlyTemplate := filepath.Join(
+	return desktopGenerator.GenerateYearlyPayslipsForScope(
+		a.db,
+		a.paths.CacheDir,
 		a.paths.ResourcesDir,
-		"yearly_template.xlsx",
-	)
-
-	if _, err := desktopGenerator.EnsureYearlyXLSX(
-		financialYearStart,
-		a.db,
-		a.paths.CacheDir,
-		yearlyTemplate,
-	); err != nil {
-		return 0, fmt.Errorf(
-			"[excel] ensuring yearly XLSX files: %w",
-			err,
-		)
-	}
-
-	root, err := desktopGenerator.YearlyPayslipRoot(
-		a.db,
-		cluster,
-		scope,
-		udise,
-		financialYearStart,
-		a.paths.CacheDir,
-	)
-	if err != nil {
-		return 0, err
-	}
-
-	outputRoot, err := desktopGenerator.YearlyPayslipRoot(
-		a.db,
-		cluster,
-		scope,
-		udise,
-		financialYearStart,
 		a.config.OutputDir,
+		scope,
+		cluster,
+		udise,
+		financialYearStart,
 	)
-	if err != nil {
-		return 0, err
-	}
-
-	jobs, err := generator.CollectMissingPDFJobs(
-		root,
-		outputRoot,
-	)
-	if err != nil {
-		return 0, fmt.Errorf(
-			"collecting PDF jobs: %w",
-			err,
-		)
-	}
-	if len(jobs) == 0 {
-		return 0, nil
-	}
-
-	results := concurrency.RunPDFConversion(
-		jobs,
-		8,
-		func(result concurrency.ConversionResult) {
-			if result.Err != nil {
-				fmt.Printf(
-					"YEARLY PDF FAILED: %s: %v\n",
-					result.Filepath,
-					result.Err,
-				)
-			}
-		},
-	)
-
-	_, failed := generator.CountConversionResults(results)
-
-	if failed > 0 {
-		return 0, fmt.Errorf(
-			"yearly PDF conversion failed for %d file(s)",
-			failed,
-		)
-	}
-
-	return len(jobs), nil
 }
 
 func (a *App) ImportPayroll(

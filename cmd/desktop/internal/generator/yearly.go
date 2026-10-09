@@ -3,14 +3,17 @@ package generator
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/osutils"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
 	"github.com/Dimensionexpert/payslip/internal/concurrency"
 	"github.com/Dimensionexpert/payslip/internal/database"
 	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	genPDF "github.com/Dimensionexpert/payslip/internal/genPDF"
+
 	"github.com/Dimensionexpert/payslip/internal/generator"
 )
 
@@ -332,4 +335,160 @@ func GenerateYearlyPayslips(
 	}
 
 	return nil
+}
+
+// Opening the Yearly payslips
+
+func OpenYearlyPayslip(
+	db *sql.DB,
+	shalarthID string,
+	financialYearStart int,
+	outputDir string,
+) error {
+	yearly, err := database.GetYearlyPayslip(
+		db,
+		shalarthID,
+		financialYearStart,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"[query] fetching yearly payslip: %w",
+			err,
+		)
+	}
+
+	if outputDir == "" {
+		return fmt.Errorf(
+			"[path] output directory is not configured",
+		)
+	}
+
+	pdfPath := genexcel.YearlyPayslipPDFPath(
+		outputDir,
+		yearly,
+		financialYearStart,
+	)
+
+	if _, err := os.Stat(pdfPath); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf(
+				"[file] yearly payslip PDF not found: %s",
+				pdfPath,
+			)
+		}
+
+		return fmt.Errorf(
+			"[file] checking yearly payslip PDF: %w",
+			err,
+		)
+	}
+
+	if err := osutils.OpenDir(pdfPath); err != nil {
+		return fmt.Errorf(
+			"[file] opening yearly payslip PDF: %w",
+			err,
+		)
+	}
+
+	fmt.Println(pdfPath)
+
+	return nil
+}
+
+func GenerateYearlyPayslipsForScope(
+	db *sql.DB,
+	cacheDir string,
+	resourcesDir string,
+	outputDir string,
+	scope string,
+	cluster string,
+	udise string,
+	financialYearStart int,
+) (int, error) {
+	yearlyTemplate := filepath.Join(
+		resourcesDir,
+		"yearly_template.xlsx",
+	)
+
+	if _, err := EnsureYearlyXLSX(
+		financialYearStart,
+		db,
+		cacheDir,
+		yearlyTemplate,
+	); err != nil {
+		return 0, fmt.Errorf(
+			"[excel] ensuring yearly XLSX files: %w",
+			err,
+		)
+	}
+
+	root, err := YearlyPayslipRoot(
+		db,
+		cluster,
+		scope,
+		udise,
+		financialYearStart,
+		cacheDir,
+	)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"[path] resolving yearly cache scope: %w",
+			err,
+		)
+	}
+
+	outputRoot, err := YearlyPayslipRoot(
+		db,
+		cluster,
+		scope,
+		udise,
+		financialYearStart,
+		outputDir,
+	)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"[path] resolving yearly output scope: %w",
+			err,
+		)
+	}
+
+	jobs, err := generator.CollectMissingPDFJobs(
+		root,
+		outputRoot,
+	)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"[file] collecting yearly PDF jobs: %w",
+			err,
+		)
+	}
+
+	if len(jobs) == 0 {
+		return 0, nil
+	}
+
+	results := concurrency.RunPDFConversion(
+		jobs,
+		8,
+		func(result concurrency.ConversionResult) {
+			if result.Err != nil {
+				fmt.Printf(
+					"YEARLY PDF FAILED: %s: %v\n",
+					result.Filepath,
+					result.Err,
+				)
+			}
+		},
+	)
+
+	_, failed := generator.CountConversionResults(results)
+
+	if failed > 0 {
+		return 0, fmt.Errorf(
+			"[pdf] yearly conversion failed for %d file(s)",
+			failed,
+		)
+	}
+
+	return len(jobs), nil
 }

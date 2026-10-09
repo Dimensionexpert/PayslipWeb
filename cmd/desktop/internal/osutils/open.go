@@ -1,4 +1,4 @@
-package osutil
+package osutils
 
 import (
 	"fmt"
