@@ -387,3 +387,27 @@ func (a *App) GetYearlyBulkOutputDirectory(
 		a.config.OutputDir,
 	)
 }
+
+func (a *App) SelectPayrollFile() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("app context is not initialized")
+	}
+
+	path, err := runtime.OpenFileDialog(
+		a.ctx,
+		runtime.OpenDialogOptions{
+			Title: "Select monthly payroll file",
+			Filters: []runtime.FileFilter{
+				{
+					DisplayName: "Excel Files (*.xlsx)",
+					Pattern:     "*.xlsx",
+				},
+			},
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("opening payroll file dialog: %w", err)
+	}
+
+	return path, nil
+}
