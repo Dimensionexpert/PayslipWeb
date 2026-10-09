@@ -4,15 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/exec"
 
 	"path/filepath"
-	"time"
-
-	goRuntime "runtime"
 
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/config"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/dto"
@@ -20,9 +15,9 @@ import (
 	osutil "github.com/Dimensionexpert/payslip/cmd/desktop/internal/osutils"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/paths"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/query"
+	"github.com/Dimensionexpert/payslip/cmd/desktop/internal/services"
 	"github.com/Dimensionexpert/payslip/cmd/desktop/resources"
 	"github.com/Dimensionexpert/payslip/internal/database"
-	genexcel "github.com/Dimensionexpert/payslip/internal/genExcel"
 	"github.com/Dimensionexpert/payslip/internal/importer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -289,71 +284,12 @@ func (a *App) OpenYearlyPayslip(
 	shalarthID string,
 	financialYearStart int,
 ) error {
-
-	yearly, err := database.GetYearlyPayslip(
+	return desktopGenerator.OpenYearlyPayslip(
 		a.db,
 		shalarthID,
 		financialYearStart,
+		a.config.OutputDir,
 	)
-	if err != nil {
-		return fmt.Errorf("fetching yearly payslip: %w", err)
-	}
-
-	outputDir := a.config.OutputDir
-
-	if outputDir == "" {
-		return fmt.Errorf("output directory is not configured")
-	}
-
-	pdfPath := genexcel.YearlyPayslipPDFPath(
-		outputDir,
-		yearly,
-		financialYearStart,
-	)
-
-	if _, err := os.Stat(pdfPath); err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf(
-				"yearly payslip PDF not found: %s",
-				pdfPath,
-			)
-		}
-
-		return fmt.Errorf(
-			"checking yearly payslip PDF: %w",
-			err,
-		)
-	}
-
-	var cmd *exec.Cmd
-
-	switch goRuntime.GOOS {
-	case "linux":
-		cmd = exec.Command("xdg-open", pdfPath)
-	case "windows":
-		cmd = exec.Command(
-			"rundll32",
-			"url.dll,FileProtocolHandler",
-			pdfPath,
-		)
-	case "darwin":
-		cmd = exec.Command("open", pdfPath)
-	default:
-		return fmt.Errorf(
-			"unsupported platform for opening files",
-		)
-	}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf(
-			"failed to open PDF launcher: %w",
-			err,
-		)
-	}
-
-	fmt.Println(pdfPath)
-
-	return nil
 }
 
 func (a *App) GetClusters() ([]dto.ClusterSummary, error) {
@@ -403,91 +339,15 @@ func (a *App) ImportPayroll(
 	month int,
 	year int,
 ) (importer.ImportReport, error) {
-	if err := os.MkdirAll(a.paths.SourceDir, 0755); err != nil {
-		return importer.ImportReport{},
-			fmt.Errorf("creating source directory: %w", err)
-	}
-
-	destination := filepath.Join(
-		a.paths.SourceDir,
-		filepath.Base(truthPath),
-	)
-
-	sourceAbs, err := filepath.Abs(truthPath)
-	if err != nil {
-		return importer.ImportReport{},
-			fmt.Errorf("resolving payroll file path: %w", err)
-	}
-
-	destinationAbs, err := filepath.Abs(destination)
-	if err != nil {
-		return importer.ImportReport{},
-			fmt.Errorf("resolving source path: %w", err)
-	}
-
-	if sourceAbs != destinationAbs {
-		src, err := os.Open(truthPath)
-		if err != nil {
-			return importer.ImportReport{},
-				fmt.Errorf("opening selected payroll file: %w", err)
-		}
-		defer src.Close()
-
-		dst, err := os.Create(destination)
-		if err != nil {
-			return importer.ImportReport{},
-				fmt.Errorf("creating source payroll file: %w", err)
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, src); err != nil {
-			return importer.ImportReport{},
-				fmt.Errorf("copying payroll file: %w", err)
-		}
-	}
-
-	clusterPath := filepath.Join(
-		a.paths.ResourcesDir,
-		"clusters.xlsx",
-	)
-
-	report, _, _, err := importer.ImportPayroll(
-		clusterPath,
-		destination,
-		a.paths.DBPath,
+	return services.ImportPayroll(
+		truthPath,
 		month,
 		year,
-	)
-	if err != nil {
-		return report, err
-	}
-
-	// Invalidate cached XLSX files for the imported month.
-	monthlyCacheRoot := filepath.Join(
+		a.paths.SourceDir,
+		a.paths.ResourcesDir,
+		a.paths.DBPath,
 		a.paths.CacheDir,
-		fmt.Sprintf("%s_%d", time.Month(month), year),
 	)
-
-	if err := os.RemoveAll(monthlyCacheRoot); err != nil {
-		return report, fmt.Errorf(
-			"invalidating monthly XLSX cache: %w",
-			err,
-		)
-	}
-
-	return report, nil
-}
-
-func (a *App) SelectPayrollFile() (string, error) {
-	return runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Select Payroll File",
-		Filters: []runtime.FileFilter{
-			{
-				DisplayName: "Excel Files (*.xlsx)",
-				Pattern:     "*.xlsx",
-			},
-		},
-	})
 }
 
 func (a *App) OpenDir(path string) error {
