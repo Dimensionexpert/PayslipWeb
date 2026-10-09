@@ -31,6 +31,7 @@ type App struct {
 	paths  dto.AppPaths
 }
 
+// --- App lifecycle and initialization ---
 func NewApp() (*App, error) {
 	// Resolve application paths.
 	appPaths, err := paths.New()
@@ -83,6 +84,7 @@ func (a *App) shutdown(ctx context.Context) {
 	}
 }
 
+// --- Data access and queries ---
 func (a *App) GetEmployee(
 	shalarthID string,
 ) (dto.EmployeeSummary, error) {
@@ -126,6 +128,11 @@ func (a *App) GetSchoolsByCluster(
 	return query.GetSchoolsByCluster(a.db, cluster)
 }
 
+func (a *App) GetClusters() ([]dto.ClusterSummary, error) {
+	return query.GetClusters(a.db)
+}
+
+// --- Individual payslip generation and viewing ---
 func (a *App) GenerateMonthlyPayslip(
 	shalarthID string,
 	month int,
@@ -154,33 +161,6 @@ func (a *App) GenerateMonthlyPayslip(
 	return pdfPath, nil
 }
 
-func (a *App) ChooseOutputDirectory() (string, error) {
-	if a.ctx == nil {
-		return "", fmt.Errorf("app context is not initialized")
-	}
-
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("getting home directory: %w", err)
-	}
-
-	defaultDirectory := filepath.Join(homeDir, "Downloads")
-
-	path, err := runtime.OpenDirectoryDialog(
-		a.ctx,
-		runtime.OpenDialogOptions{
-			DefaultDirectory:     defaultDirectory,
-			Title:                "Choose output folder",
-			CanCreateDirectories: true,
-		},
-	)
-	if err != nil {
-		return "", fmt.Errorf("opening output directory dialog: %w", err)
-	}
-
-	return path, nil
-}
-
 func (a *App) GenerateYearlyPayslip(
 	shalarthID string,
 	financialYearStart int,
@@ -205,65 +185,6 @@ func (a *App) GenerateYearlyPayslip(
 	}
 
 	return pdfPath, nil
-}
-
-func (a *App) GenerateMonthlyPayslips(
-	month int,
-	year int,
-) error {
-	return desktopGenerator.GenerateMonthlyPayslips(
-		a.db,
-		month,
-		year,
-		a.paths.CacheDir,
-		a.paths.ResourcesDir,
-		a.config.OutputDir,
-	)
-}
-
-func (a *App) GenerateYearlyPayslips(
-	financialYearStart int,
-) error {
-	return desktopGenerator.GenerateYearlyPayslips(
-		a.db,
-		financialYearStart,
-		a.paths.CacheDir,
-		a.paths.ResourcesDir,
-		a.config.OutputDir,
-	)
-}
-
-func (a *App) SetOutputDirectory() (string, error) {
-	if a.ctx == nil {
-		return "", fmt.Errorf("app context is not initialized")
-	}
-
-	path, err := runtime.OpenDirectoryDialog(
-		a.ctx,
-		runtime.OpenDialogOptions{
-			Title:                "Choose Payslip Output Folder",
-			CanCreateDirectories: true,
-		},
-	)
-	if err != nil {
-		return "", fmt.Errorf("opening output directory dialog: %w", err)
-	}
-
-	if path == "" {
-		return "", nil
-	}
-
-	a.config.OutputDir = path
-
-	if err := config.Save(a.config); err != nil {
-		return "", fmt.Errorf("saving config: %w", err)
-	}
-
-	return path, nil
-}
-
-func (a *App) GetOutputDirectory() string {
-	return a.config.OutputDir
 }
 
 func (a *App) OpenMonthlyPayslip(
@@ -292,8 +213,31 @@ func (a *App) OpenYearlyPayslip(
 	)
 }
 
-func (a *App) GetClusters() ([]dto.ClusterSummary, error) {
-	return query.GetClusters(a.db)
+// --- Bulk generation and scope-based jobs ---
+func (a *App) GenerateMonthlyPayslips(
+	month int,
+	year int,
+) error {
+	return desktopGenerator.GenerateMonthlyPayslips(
+		a.db,
+		month,
+		year,
+		a.paths.CacheDir,
+		a.paths.ResourcesDir,
+		a.config.OutputDir,
+	)
+}
+
+func (a *App) GenerateYearlyPayslips(
+	financialYearStart int,
+) error {
+	return desktopGenerator.GenerateYearlyPayslips(
+		a.db,
+		financialYearStart,
+		a.paths.CacheDir,
+		a.paths.ResourcesDir,
+		a.config.OutputDir,
+	)
 }
 
 func (a *App) GenerateMonthlyPayslipsForScope(
@@ -334,24 +278,65 @@ func (a *App) GenerateYearlyPayslipsForScope(
 	)
 }
 
-func (a *App) ImportPayroll(
-	truthPath string,
-	month int,
-	year int,
-) (importer.ImportReport, error) {
-	return services.ImportPayroll(
-		truthPath,
-		month,
-		year,
-		a.paths.SourceDir,
-		a.paths.ResourcesDir,
-		a.paths.DBPath,
-		a.paths.CacheDir,
+// --- Output directory configuration and native dialogs ---
+func (a *App) ChooseOutputDirectory() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("app context is not initialized")
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("getting home directory: %w", err)
+	}
+
+	defaultDirectory := filepath.Join(homeDir, "Downloads")
+
+	path, err := runtime.OpenDirectoryDialog(
+		a.ctx,
+		runtime.OpenDialogOptions{
+			DefaultDirectory:     defaultDirectory,
+			Title:                "Choose output folder",
+			CanCreateDirectories: true,
+		},
 	)
+	if err != nil {
+		return "", fmt.Errorf("opening output directory dialog: %w", err)
+	}
+
+	return path, nil
 }
 
-func (a *App) OpenDir(path string) error {
-	return osutil.OpenDir(path)
+func (a *App) SetOutputDirectory() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("app context is not initialized")
+	}
+
+	path, err := runtime.OpenDirectoryDialog(
+		a.ctx,
+		runtime.OpenDialogOptions{
+			Title:                "Choose Payslip Output Folder",
+			CanCreateDirectories: true,
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("opening output directory dialog: %w", err)
+	}
+
+	if path == "" {
+		return "", nil
+	}
+
+	a.config.OutputDir = path
+
+	if err := config.Save(a.config); err != nil {
+		return "", fmt.Errorf("saving config: %w", err)
+	}
+
+	return path, nil
+}
+
+func (a *App) GetOutputDirectory() string {
+	return a.config.OutputDir
 }
 
 func (a *App) GetMonthlyBulkOutputDirectory(
@@ -388,6 +373,7 @@ func (a *App) GetYearlyBulkOutputDirectory(
 	)
 }
 
+// --- Import and file system helpers ---
 func (a *App) SelectPayrollFile() (string, error) {
 	if a.ctx == nil {
 		return "", fmt.Errorf("app context is not initialized")
@@ -410,4 +396,24 @@ func (a *App) SelectPayrollFile() (string, error) {
 	}
 
 	return path, nil
+}
+
+func (a *App) ImportPayroll(
+	truthPath string,
+	month int,
+	year int,
+) (importer.ImportReport, error) {
+	return services.ImportPayroll(
+		truthPath,
+		month,
+		year,
+		a.paths.SourceDir,
+		a.paths.ResourcesDir,
+		a.paths.DBPath,
+		a.paths.CacheDir,
+	)
+}
+
+func (a *App) OpenDir(path string) error {
+	return osutil.OpenDir(path)
 }
