@@ -82,55 +82,57 @@ func GenerateMonthlyPayslip(
 	// Earnings
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "C15", payslip.BasicPay)
-	f.SetCellValue(sheet, "C16", payslip.DA)
-	f.SetCellValue(sheet, "C17", payslip.HRA)
-	f.SetCellValue(sheet, "C18", payslip.TA)
-	f.SetCellValue(sheet, "C19", payslip.TAArrear)
-	f.SetCellValue(sheet, "C20", payslip.DAArrears)
-	f.SetCellValue(sheet, "C21", payslip.BasicArrears)
-	f.SetCellValue(sheet, "C22", payslip.NPSEmprAllow)
+	f.SetCellValue(sheet, "C15", formatINR(payslip.BasicPay))
+	f.SetCellValue(sheet, "C16", formatINR(payslip.DA))
+	f.SetCellValue(sheet, "C17", formatINR(payslip.HRA))
+	f.SetCellValue(sheet, "C18", formatINR(payslip.TA))
+	f.SetCellValue(sheet, "C19", formatINR(payslip.TAArrear))
+	f.SetCellValue(sheet, "C20", formatINR(payslip.DAArrears))
+	f.SetCellValue(sheet, "C21", formatINR(payslip.BasicArrears))
+	f.SetCellValue(sheet, "C22", formatINR(payslip.NPSEmprAllow))
+	f.SetCellValue(sheet, "C23", formatINR(0))
 
 	// --------------------------------------------------
 	// Deductions
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "F15", payslip.GPF)
-	f.SetCellValue(sheet, "F16", payslip.GPFAdvance)
-	f.SetCellValue(sheet, "F17", payslip.PT)
+	f.SetCellValue(sheet, "F15", formatINR(payslip.GPF))
+	f.SetCellValue(sheet, "F16", formatINR(payslip.GPFAdvance))
+	f.SetCellValue(sheet, "F17", formatINR(payslip.PT))
 
 	// GIS is represented by two DB fields,
 	// but the template has a single GIS field.
 	gis := payslip.GISZP + payslip.GISScout
-	f.SetCellValue(sheet, "F18", gis)
+	f.SetCellValue(sheet, "F18", formatINR(gis))
 
-	f.SetCellValue(sheet, "F19", payslip.RevenueStamp)
-	f.SetCellValue(sheet, "F20", payslip.NPSEmprContri)
-	f.SetCellValue(sheet, "F21", payslip.NPSEmpContri)
-	f.SetCellValue(sheet, "F22", payslip.NPSEmprContriArr)
-	f.SetCellValue(sheet, "F23", payslip.NPSEmpContriArr)
-	f.SetCellValue(sheet, "F24", payslip.IncomeTax)
-	f.SetCellValue(sheet, "F25", payslip.NGRSocietyLoan)
+	f.SetCellValue(sheet, "F19", formatINR(payslip.RevenueStamp))
+	f.SetCellValue(sheet, "F20", formatINR(payslip.NPSEmprContri))
+	f.SetCellValue(sheet, "F21", formatINR(payslip.NPSEmpContri))
+	f.SetCellValue(sheet, "F22", formatINR(payslip.NPSEmprContriArr))
+	f.SetCellValue(sheet, "F23", formatINR(payslip.NPSEmpContriArr))
+	f.SetCellValue(sheet, "F24", formatINR(payslip.IncomeTax))
+	f.SetCellValue(sheet, "F25", formatINR(payslip.NGRSocietyLoan))
 
 	// --------------------------------------------------
 	// Totals
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "C26", payslip.TotalPay)
+	f.SetCellValue(sheet, "C26", formatINR(payslip.TotalPay))
 
-	totalDeduction := payslip.TotalGovtDeductions + payslip.NPSEmpContri + payslip.NPSEmprContri + payslip.NPSEmpContriArr + payslip.NPSEmprContriArr + payslip.NGRTotalDeduction
+	totalDeduction := payslip.TotalGovtDeductions +
+		payslip.NPSEmpContri +
+		payslip.NPSEmprContri +
+		payslip.NPSEmpContriArr +
+		payslip.NPSEmprContriArr +
+		payslip.NGRTotalDeduction
 
-	f.SetCellValue(sheet, "F26", totalDeduction)
+	f.SetCellValue(sheet, "F26", formatINR(totalDeduction))
 
 	// --------------------------------------------------
 	// Net salary
 	// --------------------------------------------------
 
-	f.SetCellValue(
-		sheet,
-		"A29",
-		fmt.Sprintf("₹ %.0f", payslip.EmployeeNetSalary),
-	)
+	f.SetCellValue(sheet, "A29", formatINR(payslip.EmployeeNetSalary))
 
 	f.SetCellValue(
 		sheet,
