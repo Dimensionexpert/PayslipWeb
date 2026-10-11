@@ -25,7 +25,10 @@ func ImportTruth(
 		ClusterMappingCount: len(clusterMap),
 	}
 
-	headerMap := excel.BuildHeaderMap(rows[4])
+	headerRow, headerMap, err := excel.FindHeaderRow(rows)
+	if err != nil {
+		return nil, nil, nil, report, fmt.Errorf("finding payroll header row: %w", err)
+	}
 
 	employees := []models.Employee{}
 	schools := make(map[string]models.School)
@@ -34,7 +37,7 @@ func ImportTruth(
 	missingClusters := make(map[string]string)
 	unknownUDISE := make(map[string]struct{})
 
-	for i := 5; i < len(rows); i++ {
+	for i := headerRow + 1; i < len(rows); i++ {
 		row := rows[i]
 
 		udiseCode := excel.Get(row, headerMap, "SCHOOL UDISE CODE")
@@ -45,14 +48,15 @@ func ImportTruth(
 			strings.TrimSpace(schoolName) == "" {
 			continue
 		}
+
 		// Check whether the UDISE exists in the cluster mapping.
 		clusterName, ok := clusterMap[udiseCode]
 
 		if !ok {
-			if udiseCode != "" {
+			if strings.TrimSpace(udiseCode) != "" {
 				unknownUDISE[udiseCode] = struct{}{}
 			}
-		} else if clusterName == "" {
+		} else if strings.TrimSpace(clusterName) == "" {
 			missingClusters[udiseCode] = schoolName
 		}
 
