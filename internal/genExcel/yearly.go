@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/xuri/excelize/v2"
-
+	"github.com/Dimensionexpert/payslip/internal/excel"
 	"github.com/Dimensionexpert/payslip/internal/models"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func GenerateYearlyPayslip(
@@ -16,58 +17,82 @@ func GenerateYearlyPayslip(
 	data models.PayslipExportYear,
 	startYear int,
 ) (string, error) {
-	f, err := excelize.OpenFile(templatePath)
+	// Open the yearly template.
+	yearlyTemplate, err := excel.Open(templatePath)
 	if err != nil {
 		return "", fmt.Errorf("opening yearly template: %w", err)
 	}
-	defer f.Close()
+	defer yearlyTemplate.Close()
 
-	const sheet = "Sheet1"
+	const sheet = "Yearly"
 
 	employee := data.Employee
 	school := data.School
-
-	// --------------------------------------------------
-	// Financial year
-	//
-	// Example:
-	//     April 2026 to March 2027
-	// --------------------------------------------------
-
 	endYear := startYear + 1
 
-	f.SetCellValue(
-		sheet,
-		"A6",
-		fmt.Sprintf("Financial Year - %d - %d", startYear, endYear),
+	// Helper for consistent cell-writing error handling.
+	setValue := func(cell string, value any) error {
+		if err := yearlyTemplate.SetCellValue(sheet, cell, value); err != nil {
+			return fmt.Errorf("setting cell %s: %w", cell, err)
+		}
+		return nil
+	}
+
+	// --------------------------------------------------
+	// Header
+	// --------------------------------------------------
+
+	header := fmt.Sprintf(
+		"CLUSTER : %s   |   TAL : %s   |   DIST : Pune",
+		data.Cluster.Name,
+		school.Block,
 	)
+
+	if err := setValue("I3", header); err != nil {
+		return "", err
+	}
+
+	if err := setValue(
+		"A13",
+		fmt.Sprintf("FINANCIAL YEAR : %d-%d", startYear, endYear),
+	); err != nil {
+		return "", err
+	}
 
 	// --------------------------------------------------
 	// Employee information
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "B1", employee.Name)
-	f.SetCellValue(sheet, "B2", "") // DOB is not available yet
-	f.SetCellValue(sheet, "B3", data.Cluster.Name)
-	f.SetCellValue(sheet, "B4", school.Name)
+	caser := cases.Title(language.English)
+	employeeName := caser.String(employee.Name)
 
-	f.SetCellValue(sheet, "G2", employee.Mobile)
-	f.SetCellValue(sheet, "G3", school.Block) // Taluka
-	f.SetCellValue(sheet, "G4", employee.Aadhaar)
+	employeeCells := []struct {
+		cell  string
+		value any
+	}{
+		{"C8", employeeName},
+		{"C9", employee.Aadhaar},
+		{"C10", employee.PAN},
 
-	f.SetCellValue(sheet, "J2", employee.Email)
-	f.SetCellValue(sheet, "J3", "Pune") // Fixed district
-	f.SetCellValue(sheet, "J4", employee.PAN)
+		{"J8", school.Name},
+		{"J9", employee.Designation},
+		{"J10", employee.Mobile},
+		{"J11", employee.Email},
 
-	f.SetCellValue(sheet, "G1", employee.BankName)
-	f.SetCellValue(sheet, "O2", employee.BranchName)
-	f.SetCellValue(sheet, "O3", employee.BankAccount)
-	f.SetCellValue(sheet, "O4", employee.BankIFSC)
+		{"Q8", employee.BankName},
+		{"Q9", employee.BranchName},
+		{"Q10", employee.BankAccount},
+		{"Q11", employee.BankIFSC},
+	}
+
+	for _, item := range employeeCells {
+		if err := setValue(item.cell, item.value); err != nil {
+			return "", err
+		}
+	}
 
 	// --------------------------------------------------
-	// Financial-year month order
-	//
-	// April to March
+	// Financial-year month order: April to March
 	// --------------------------------------------------
 
 	months := []struct {
@@ -88,15 +113,12 @@ func GenerateYearlyPayslip(
 		{3, "Mar"},
 	}
 
-	// --------------------------------------------------
-	// Find the payslip for a specific month
-	// --------------------------------------------------
-
-	findPayslip := func(month int) *models.PayslipRecord {
+	// Find a payslip for a specific month and calendar year.
+	findPayslip := func(month, year int) *models.PayslipRecord {
 		for i := range data.Payslips {
 			payslip := &data.Payslips[i]
 
-			if payslip.Month == month {
+			if payslip.Month == month && payslip.Year == year {
 				return payslip
 			}
 		}
@@ -104,97 +126,149 @@ func GenerateYearlyPayslip(
 		return nil
 	}
 
+	const firstMonthRow = 17
+
+	// Accumulate annual totals by spreadsheet column.
+	// Values stay numeric, preserving the template's cell formatting.
+	annualTotals := make(map[string]float64)
+
 	// --------------------------------------------------
-	// Write monthly values
-	//
-	// Columns:
-	//
-	// C  Basic
-	// D  DA
-	// E  HRA
-	// F  TA
-	// G  DA Arrears
-	// H  NPS Employer Allowance
-	// I  Total Pay
-	// J  GPF
-	// K  PT
-	// L  GIS ZP + Scout
-	// M  Revenue
-	// N  NPS Employer Contribution
-	// O  NPS Employee Contribution
-	// P  NPS Employer Contribution Arrears
-	// Q  NPS Employee Contribution Arrears
-	// R  Group Accidental Policy
-	// S  Income Tax
+	// Populate monthly rows and calculate annual totals
 	// --------------------------------------------------
 
 	for index, month := range months {
-		row := 10 + index
+		row := firstMonthRow + index
 
-		f.SetCellValue(sheet, fmt.Sprintf("A%d", row), fmt.Sprintf("%02d", index+1))
-		f.SetCellValue(sheet, fmt.Sprintf("B%d", row), month.name)
+		if err := setValue(
+			fmt.Sprintf("A%d", row),
+			fmt.Sprintf("%02d", index+1),
+		); err != nil {
+			return "", err
+		}
 
-		payslip := findPayslip(month.month)
+		if err := setValue(
+			fmt.Sprintf("B%d", row),
+			month.name,
+		); err != nil {
+			return "", err
+		}
+
+		// January through March belong to the following year.
+		year := startYear
+		if month.month <= 3 {
+			year = endYear
+		}
+
+		payslip := findPayslip(month.month, year)
 		if payslip == nil {
+			// Missing months remain blank and contribute zero
+			// to the annual totals.
 			continue
 		}
 
+		// GIS combines two database fields.
 		gis := payslip.GISZP + payslip.GISScout
 
-		f.SetCellValue(sheet, fmt.Sprintf("C%d", row), payslip.BasicPay)
-		f.SetCellValue(sheet, fmt.Sprintf("D%d", row), payslip.DA)
-		f.SetCellValue(sheet, fmt.Sprintf("E%d", row), payslip.HRA)
-		f.SetCellValue(sheet, fmt.Sprintf("F%d", row), payslip.TA)
-		f.SetCellValue(sheet, fmt.Sprintf("G%d", row), payslip.DAArrears)
-		f.SetCellValue(sheet, fmt.Sprintf("H%d", row), payslip.NPSEmprAllow)
-		f.SetCellValue(sheet, fmt.Sprintf("I%d", row), payslip.TotalPay)
+		// Preserve the existing monthly deduction calculation.
+		totalDeduction := payslip.TotalGovtDeductions +
+			payslip.NPSEmpContri +
+			payslip.NPSEmprContri +
+			payslip.NPSEmpContriArr +
+			payslip.NPSEmprContriArr +
+			payslip.NGRTotalDeduction
 
-		f.SetCellValue(sheet, fmt.Sprintf("J%d", row), payslip.GPF)
-		f.SetCellValue(sheet, fmt.Sprintf("K%d", row), payslip.PT)
-		f.SetCellValue(sheet, fmt.Sprintf("L%d", row), gis)
-		f.SetCellValue(sheet, fmt.Sprintf("M%d", row), payslip.RevenueStamp)
+		values := []struct {
+			column string
+			value  float64
+		}{
+			{"C", payslip.BasicPay},
+			{"D", payslip.DA},
+			{"E", payslip.HRA},
+			{"F", payslip.TA},
+			{"G", payslip.DAArrears},
+			{"H", payslip.NPSEmprAllow},
+			{"I", payslip.TotalPay},
 
-		f.SetCellValue(sheet, fmt.Sprintf("N%d", row), payslip.NPSEmprContri)
-		f.SetCellValue(sheet, fmt.Sprintf("O%d", row), payslip.NPSEmpContri)
-		f.SetCellValue(sheet, fmt.Sprintf("P%d", row), payslip.NPSEmprContriArr)
-		f.SetCellValue(sheet, fmt.Sprintf("Q%d", row), payslip.NPSEmpContriArr)
+			{"J", payslip.GPF},
+			{"K", payslip.PT},
+			{"L", gis},
+			{"M", payslip.RevenueStamp},
 
-		f.SetCellValue(
-			sheet,
-			fmt.Sprintf("R%d", row),
-			payslip.GroupAccidentalPolicy,
-		)
+			{"N", payslip.NPSEmprContri},
+			{"O", payslip.NPSEmpContri},
+			{"P", payslip.NPSEmprContriArr},
+			{"Q", payslip.NPSEmpContriArr},
 
-		f.SetCellValue(sheet, fmt.Sprintf("S%d", row), payslip.IncomeTax)
+			{"R", payslip.GroupAccidentalPolicy},
+			{"S", payslip.IncomeTax},
+
+			{"T", totalDeduction},
+			{"U", payslip.EmployeeNetSalary},
+		}
+
+		for _, item := range values {
+			cell := fmt.Sprintf("%s%d", item.column, row)
+
+			if err := setValue(cell, item.value); err != nil {
+				return "", err
+			}
+
+			// Calculate annual totals in Go instead of using
+			// spreadsheet formulas.
+			annualTotals[item.column] += item.value
+		}
 	}
 
 	// --------------------------------------------------
-	// Total row
+	// Annual total row
+	//
+	// Monthly rows: 17-28
+	// Total row:    29
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "A22", "15")
-	f.SetCellValue(sheet, "B22", "Total")
+	if err := setValue("A29", "13"); err != nil {
+		return "", err
+	}
+
+	if err := setValue("B29", "Total"); err != nil {
+		return "", err
+	}
 
 	totalColumns := []string{
 		"C", "D", "E", "F", "G", "H", "I",
 		"J", "K", "L", "M", "N", "O", "P",
-		"Q", "R", "S",
+		"Q", "R", "S", "T", "U",
 	}
 
 	for _, column := range totalColumns {
-		formula := fmt.Sprintf("SUM(%s10:%s21)", column, column)
+		cell := fmt.Sprintf("%s29", column)
 
-		if err := f.SetCellFormula(sheet, column+"22", formula); err != nil {
-			return "", fmt.Errorf(
-				"setting total formula for column %s: %w",
-				column,
-				err,
-			)
+		if err := setValue(cell, annualTotals[column]); err != nil {
+			return "", err
 		}
 	}
 
 	// --------------------------------------------------
-	// Output
+	// Signatory names
+	// --------------------------------------------------
+
+	signatories := []struct {
+		cell  string
+		value string
+	}{
+		{"B35", employeeName},
+		{"I35", school.Name},
+		{"P35", data.Cluster.Name},
+	}
+
+	for _, item := range signatories {
+		if err := setValue(item.cell, item.value); err != nil {
+			return "", err
+		}
+	}
+
+	// --------------------------------------------------
+	// Output directory and filename
 	// --------------------------------------------------
 
 	financialYearDir := filepath.Join(
@@ -228,7 +302,11 @@ func GenerateYearlyPayslip(
 
 	outputPath := filepath.Join(schoolDir, filename)
 
-	if err := f.SaveAs(outputPath); err != nil {
+	// --------------------------------------------------
+	// Save
+	// --------------------------------------------------
+
+	if err := yearlyTemplate.SaveAs(outputPath); err != nil {
 		return "", fmt.Errorf("saving yearly payslip: %w", err)
 	}
 

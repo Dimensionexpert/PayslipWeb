@@ -23,7 +23,6 @@ func GenerateMonthlyPayslip(
 	outputDir string,
 	data models.PayslipExport,
 ) (string, error) {
-
 	f, err := excelize.OpenFile(templatePath)
 	if err != nil {
 		return "", fmt.Errorf("opening template: %w", err)
@@ -36,39 +35,34 @@ func GenerateMonthlyPayslip(
 	employee := data.Employee
 	payslip := data.Payslip
 
+	// Helper for consistent cell-writing error handling.
+	setValue := func(cell string, value any) error {
+		if err := f.SetCellValue(sheet, cell, value); err != nil {
+			return fmt.Errorf("setting cell %s: %w", cell, err)
+		}
+		return nil
+	}
+
 	// --------------------------------------------------
-	// Employee information
+	// Header
 	// --------------------------------------------------
 
-	f.SetCellValue(
-		sheet,
-		"A3",
-		fmt.Sprintf(
-			"CLUSTER : %s   |   TAL : %s   |   DIST : %s",
-			data.Cluster.Name,
-			data.School.Block,
-			"Pune",
-		),
+	header := fmt.Sprintf(
+		"CLUSTER : %s   |   TAL : %s   |   DIST : Pune",
+		data.Cluster.Name,
+		school.Block,
 	)
 
+	if err := setValue("A3", header); err != nil {
+		return "", err
+	}
+
 	// --------------------------------------------------
 	// Employee information
 	// --------------------------------------------------
+
 	caser := cases.Title(language.English)
 	employeeName := caser.String(employee.Name)
-	f.SetCellValue(sheet, "C8", employeeName)
-	f.SetCellValue(sheet, "C9", school.Name)
-	f.SetCellValue(sheet, "C10", employee.Designation)
-	f.SetCellValue(sheet, "C11", employee.GPFNo)
-	f.SetCellValue(sheet, "C12", fmt.Sprintf(
-		"%s %d",
-		time.Month(payslip.Month).String(),
-		payslip.Year,
-	))
-
-	f.SetCellValue(sheet, "F10", employee.ShalarthID)
-	f.SetCellValue(sheet, "F11", school.UDISECode)
-	f.SetCellValue(sheet, "F12", employee.PAN)
 
 	// Employee can have either GPF or DCPS.
 	retirementNo := employee.GPFNo
@@ -76,49 +70,99 @@ func GenerateMonthlyPayslip(
 		retirementNo = employee.DCPSNo
 	}
 
-	f.SetCellValue(sheet, "C11", retirementNo)
+	employeeCells := []struct {
+		cell  string
+		value any
+	}{
+		{"C8", employeeName},
+		{"C9", school.Name},
+		{"C10", employee.Designation},
+		{"C11", retirementNo},
+		{
+			"C12",
+			fmt.Sprintf(
+				"%s %d",
+				time.Month(payslip.Month).String(),
+				payslip.Year,
+			),
+		},
+
+		{"F10", employee.ShalarthID},
+		{"F11", school.UDISECode},
+		{"F12", employee.PAN},
+	}
+
+	for _, item := range employeeCells {
+		if err := setValue(item.cell, item.value); err != nil {
+			return "", err
+		}
+	}
 
 	// --------------------------------------------------
 	// Earnings
+	//
+	// Write numeric values, not formatted currency strings.
+	// The Excel template controls the INR display format.
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "C15", formatINR(payslip.BasicPay))
-	f.SetCellValue(sheet, "C16", formatINR(payslip.DA))
-	f.SetCellValue(sheet, "C17", formatINR(payslip.HRA))
-	f.SetCellValue(sheet, "C18", formatINR(payslip.TA))
-	f.SetCellValue(sheet, "C19", formatINR(payslip.TAArrear))
-	f.SetCellValue(sheet, "C20", formatINR(payslip.DAArrears))
-	f.SetCellValue(sheet, "C21", formatINR(payslip.BasicArrears))
-	f.SetCellValue(sheet, "C22", formatINR(payslip.NPSEmprAllow))
-	f.SetCellValue(sheet, "C23", formatINR(0))
+	earnings := []struct {
+		cell  string
+		value float64
+	}{
+		{"C15", payslip.BasicPay},
+		{"C16", payslip.DA},
+		{"C17", payslip.HRA},
+		{"C18", payslip.TA},
+		{"C19", payslip.TAArrear},
+		{"C20", payslip.DAArrears},
+		{"C21", payslip.BasicArrears},
+		{"C22", payslip.NPSEmprAllow},
+		{"C23", 0},
+		{"C26", payslip.TotalPay},
+	}
+
+	for _, item := range earnings {
+		if err := setValue(item.cell, item.value); err != nil {
+			return "", err
+		}
+	}
 
 	// --------------------------------------------------
 	// Deductions
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "F15", formatINR(payslip.GPF))
-	f.SetCellValue(sheet, "F16", formatINR(payslip.GPFAdvance))
-	f.SetCellValue(sheet, "F17", formatINR(payslip.PT))
-
-	// GIS is represented by two DB fields,
+	// GIS is represented by two database fields,
 	// but the template has a single GIS field.
 	gis := payslip.GISZP + payslip.GISScout
-	f.SetCellValue(sheet, "F18", formatINR(gis))
 
-	f.SetCellValue(sheet, "F19", formatINR(payslip.RevenueStamp))
-	f.SetCellValue(sheet, "F20", formatINR(payslip.NPSEmprContri))
-	f.SetCellValue(sheet, "F21", formatINR(payslip.NPSEmpContri))
-	f.SetCellValue(sheet, "F22", formatINR(payslip.NPSEmprContriArr))
-	f.SetCellValue(sheet, "F23", formatINR(payslip.NPSEmpContriArr))
-	f.SetCellValue(sheet, "F24", formatINR(payslip.IncomeTax))
-	f.SetCellValue(sheet, "F25", formatINR(payslip.NGRSocietyLoan))
+	deductions := []struct {
+		cell  string
+		value float64
+	}{
+		{"F15", payslip.GPF},
+		{"F16", payslip.GPFAdvance},
+		{"F17", payslip.PT},
+		{"F18", gis},
+		{"F19", payslip.RevenueStamp},
+		{"F20", payslip.NPSEmprContri},
+		{"F21", payslip.NPSEmpContri},
+		{"F22", payslip.NPSEmprContriArr},
+		{"F23", payslip.NPSEmpContriArr},
+		{"F24", payslip.IncomeTax},
+		{"F25", payslip.NGRSocietyLoan},
+	}
+
+	for _, item := range deductions {
+		if err := setValue(item.cell, item.value); err != nil {
+			return "", err
+		}
+	}
 
 	// --------------------------------------------------
-	// Totals
+	// Total deductions
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "C26", formatINR(payslip.TotalPay))
-
+	// Preserve the existing deduction calculation.
 	totalDeduction := payslip.TotalGovtDeductions +
 		payslip.NPSEmpContri +
 		payslip.NPSEmprContri +
@@ -126,36 +170,47 @@ func GenerateMonthlyPayslip(
 		payslip.NPSEmprContriArr +
 		payslip.NGRTotalDeduction
 
-	f.SetCellValue(sheet, "F26", formatINR(totalDeduction))
+	if err := setValue("F26", totalDeduction); err != nil {
+		return "", err
+	}
 
 	// --------------------------------------------------
 	// Net salary
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "A29", formatINR(payslip.EmployeeNetSalary))
+	if err := setValue("A29", payslip.EmployeeNetSalary); err != nil {
+		return "", err
+	}
 
-	f.SetCellValue(
-		sheet,
+	if err := setValue(
 		"E29",
 		AmountInWords(payslip.EmployeeNetSalary),
-	)
+	); err != nil {
+		return "", err
+	}
 
 	// --------------------------------------------------
 	// Signature / footer information
 	// --------------------------------------------------
 
-	f.SetCellValue(sheet, "E36", data.Cluster.Name)
-	f.SetCellValue(sheet, "A32", school.Name)
-	f.SetCellValue(sheet, "B36", school.Name)
+	footerCells := []struct {
+		cell  string
+		value any
+	}{
+		{"E36", data.Cluster.Name},
+		{"A32", school.Name},
+		{"B36", school.Name},
+		{"F32", time.Now().Format("02-Jan-06")},
+	}
 
-	f.SetCellValue(
-		sheet,
-		"F32",
-		time.Now().Format("02-Jan-06"),
-	)
+	for _, item := range footerCells {
+		if err := setValue(item.cell, item.value); err != nil {
+			return "", err
+		}
+	}
 
 	// --------------------------------------------------
-	// Output
+	// Output directory and filename
 	// --------------------------------------------------
 
 	monthName := time.Month(payslip.Month).String()
@@ -176,7 +231,10 @@ func GenerateMonthlyPayslip(
 	)
 
 	if err := os.MkdirAll(schoolDir, 0755); err != nil {
-		return "", fmt.Errorf("creating school directory: %w", err)
+		return "", fmt.Errorf(
+			"creating school directory: %w",
+			err,
+		)
 	}
 
 	filename := fmt.Sprintf(
@@ -185,6 +243,10 @@ func GenerateMonthlyPayslip(
 	)
 
 	outputPath := filepath.Join(schoolDir, filename)
+
+	// --------------------------------------------------
+	// Save
+	// --------------------------------------------------
 
 	if err := f.SaveAs(outputPath); err != nil {
 		return "", fmt.Errorf("saving output: %w", err)
