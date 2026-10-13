@@ -18,6 +18,7 @@ A payroll and payslip automation project for school staff data. It imports Excel
 - [Run the desktop app](#run-the-desktop-app)
 - [Output layout](#output-layout)
 - [Development notes](#development-notes)
+- [To-do](#to-do)
 - [Useful commands](#useful-commands)
 
 ## Overview
@@ -148,6 +149,12 @@ This makes it easier to trace payouts by month, financial year, school, and clus
   - `cmd/desktop` for the Wails app
 - Output directories and paths are configurable from the desktop app.
 - This project is designed for a school payroll workflow and expects source templates and raw payroll files to be available locally.
+
+## To-do
+
+1. Add delete and regenerate cache XLSX
+2. Feature: rollback import
+3. Add caching layer for view button
 
 ## Useful commands
 
