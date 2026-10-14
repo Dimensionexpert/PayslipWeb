@@ -150,11 +150,22 @@ This makes it easier to trace payouts by month, financial year, school, and clus
 - Output directories and paths are configurable from the desktop app.
 - This project is designed for a school payroll workflow and expects source templates and raw payroll files to be available locally.
 
-## To-do
+## V2 Roadmap
 
-1. Add delete and regenerate cache XLSX
-2. Feature: rollback import
-3. Add caching layer for view button
+1. **Refactor Payslip Viewing Flow**
+   - Simplify and improve the `OpenPayslip` workflow.
+   - Ensure consistent file-path resolution and missing-file handling.
+
+2. **Implement Import Rollback**
+   - Add import history and tracking.
+   - Allow users to safely undo an import, including its associated database changes.
+   - Prevent accidental deletion of unrelated or previously existing data.
+
+3. **Add Windows Compatibility**
+   - Resolve platform-specific dependencies and file-path handling.
+   - Integrate LibreOffice and other required runtime dependencies.
+   - Test the application end-to-end on Windows.
+   - Package the application for distribution.
 
 ## Useful commands
 
