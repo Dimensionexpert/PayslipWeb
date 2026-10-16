@@ -415,5 +415,5 @@ func (a *App) ImportPayroll(
 }
 
 func (a *App) OpenDir(path string) error {
-	return osutil.OpenDir(path)
+	return osutil.OpenPath(path)
 }

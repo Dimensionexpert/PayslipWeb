@@ -154,7 +154,9 @@ This makes it easier to trace payouts by month, financial year, school, and clus
 
 1. **Refactor Payslip Viewing Flow**
    - Simplify and improve the `OpenPayslip` workflow.
-   - Ensure consistent file-path resolution and missing-file handling.
+   - Standardize file-opening helpers and path resolution.
+   - Improve missing, invalid, and inaccessible file handling.
+   - Keep the database lookup for now.
 
 2. **Implement Import Rollback**
    - Add import history and tracking.

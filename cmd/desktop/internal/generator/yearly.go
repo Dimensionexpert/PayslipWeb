@@ -2,6 +2,7 @@ package generator
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -369,8 +370,9 @@ func OpenYearlyPayslip(
 		financialYearStart,
 	)
 
-	if _, err := os.Stat(pdfPath); err != nil {
-		if os.IsNotExist(err) {
+	info, err := os.Stat(pdfPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf(
 				"[file] yearly payslip PDF not found: %s",
 				pdfPath,
@@ -383,14 +385,24 @@ func OpenYearlyPayslip(
 		)
 	}
 
-	if err := osutils.OpenDir(pdfPath); err != nil {
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf(
+			"[file] yearly payslip path is not a regular file",
+		)
+	}
+
+	if info.Size() == 0 {
+		return fmt.Errorf(
+			"[file] yearly payslip PDF is empty",
+		)
+	}
+
+	if err := osutils.OpenPath(pdfPath); err != nil {
 		return fmt.Errorf(
 			"[file] opening yearly payslip PDF: %w",
 			err,
 		)
 	}
-
-	fmt.Println(pdfPath)
 
 	return nil
 }

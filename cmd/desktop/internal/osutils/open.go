@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-func OpenDir(path string) error {
+func OpenPath(path string) error {
 	var cmd *exec.Cmd
 
 	switch runtime.GOOS {
