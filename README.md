@@ -152,22 +152,22 @@ This makes it easier to trace payouts by month, financial year, school, and clus
 
 ## V2 Roadmap
 
-1. **Refactor Payslip Viewing Flow**
-   - Simplify and improve the `OpenPayslip` workflow.
-   - Standardize file-opening helpers and path resolution.
-   - Improve missing, invalid, and inaccessible file handling.
-   - Keep the database lookup for now.
+1. **Refactor Payslip Viewing Flow** ✅
+   - Simplified and improved the `OpenPayslip` workflow.
+   - Standardized file-opening helpers and path resolution.
+   - Improved missing, invalid, and inaccessible file handling.
+   - Kept the database lookup in place for current behavior.
 
 2. **Implement Import Rollback**
    - Add import history and tracking.
    - Allow users to safely undo an import, including its associated database changes.
    - Prevent accidental deletion of unrelated or previously existing data.
 
-3. **Add Windows Compatibility**
-   - Resolve platform-specific dependencies and file-path handling.
-   - Integrate LibreOffice and other required runtime dependencies.
-   - Test the application end-to-end on Windows.
-   - Package the application for distribution.
+3. **Add Windows Compatibility** ✅
+   - Resolved platform-specific dependencies and file-path handling.
+   - Confirmed the desktop app builds cleanly on Windows.
+   - Verified the application runs successfully on Windows with the required runtime setup.
+   - Prepared the app for Windows distribution.
 
 ## Useful commands
 
