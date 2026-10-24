@@ -6,6 +6,8 @@ import {importer} from '../models';
 
 export function ChooseOutputDirectory():Promise<string>;
 
+export function DeleteMonthlyPayslips(arg1:number,arg2:number):Promise<number>;
+
 export function GenerateMonthlyPayslip(arg1:string,arg2:number,arg3:number):Promise<string>;
 
 export function GenerateMonthlyPayslips(arg1:number,arg2:number):Promise<void>;

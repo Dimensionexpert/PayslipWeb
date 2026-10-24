@@ -6,6 +6,10 @@ export function ChooseOutputDirectory() {
   return window['go']['main']['App']['ChooseOutputDirectory']();
 }
 
+export function DeleteMonthlyPayslips(arg1, arg2) {
+  return window['go']['main']['App']['DeleteMonthlyPayslips'](arg1, arg2);
+}
+
 export function GenerateMonthlyPayslip(arg1, arg2, arg3) {
   return window['go']['main']['App']['GenerateMonthlyPayslip'](arg1, arg2, arg3);
 }

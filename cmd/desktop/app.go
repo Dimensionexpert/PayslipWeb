@@ -417,3 +417,8 @@ func (a *App) ImportPayroll(
 func (a *App) OpenDir(path string) error {
 	return osutil.OpenPath(path)
 }
+
+// --- Delete from db helpers ---
+func (a *App) DeleteMonthlyPayslips(year, month int) (int64, error) {
+	return database.DeleteMonthlyPayslips(a.db, year, month)
+}
